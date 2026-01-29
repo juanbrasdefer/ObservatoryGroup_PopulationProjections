@@ -143,7 +143,8 @@ eurostat_baseline <- eurostat_baseline %>%
 
 
 # Graphing -----------------------------------------------------------
-indiaprojection <- ggplot(india_bound, aes(x = Time, y = Value, color = Projection))+
+indiaprojection <- india_bound %>%
+  ggplot(aes(x = Time, y = Value, color = Projection))+
   geom_line(linewidth = 1) +
   geom_point(size = 0.5) +
   labs(
@@ -151,7 +152,9 @@ indiaprojection <- ggplot(india_bound, aes(x = Time, y = Value, color = Projecti
     x = "Year",
     y = "Population") +
   scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
-  theme_minimal()
+  theme(panel.background = element_rect(fill = 'white', color = 'white'), 
+        panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid'),
+        panel.grid.minor = element_line(color = '#EBEBEB', linewidth = 0.5))
 ggsave(here("outputs/UN_India_combined.png"))
 
 japanprojection <- ggplot(japan_bound, aes(x = Time, y = Value, color = Projection))+
@@ -162,7 +165,10 @@ japanprojection <- ggplot(japan_bound, aes(x = Time, y = Value, color = Projecti
     x = "Year",
     y = "Population") +
   scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
-  theme_minimal()
+  theme_minimal() +
+  theme(panel.background = element_rect(fill = 'white', color = 'white'))
+ggsave(here("outputs/UN_Japan_combined.png"))
+
 
 chinaprojection <- ggplot(china_bound, aes(x = Time, y = Value, color = Projection))+
   geom_line(linewidth = 1) +
