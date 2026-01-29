@@ -143,75 +143,61 @@ eurostat_baseline <- eurostat_baseline %>%
 
 
 # Graphing -----------------------------------------------------------
-indiaprojection <- india_bound %>%
-  ggplot(aes(x = Time, y = Value, color = Projection))+
-  geom_line(linewidth = 1) +
-  geom_point(size = 0.5) +
+graph_UNprojection <- function(df, region_name){
+  df %>%
+    ggplot(aes(x = Time, y = Value, color = Projection))+
+    geom_line(linetype = 1, linewidth = 0.5) +
+    #geom_point(size = 0.5) +
+    labs(
+      title = paste0("UN Population Projection - ",region_name),
+      subtitle = "Median Estimate and No-Migration Scenarios",
+      x = "Year",
+      y = "Population") +
+    scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
+    theme(panel.background = element_rect(fill = 'white', color = 'white'), 
+          panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid'),
+          panel.grid.minor = element_line(color = '#EBEBEB', linewidth = 0.5),
+          text = element_text(family="Times New Roman"))
+  ggsave(here(paste0("outputs/UN_",region_name,"_combined.png")))
+}
+
+## Usage
+india_bound %>%
+  graph_UNprojection("India")
+
+japan_bound %>%
+  graph_UNprojection("Japan")
+
+china_bound %>%
+  graph_UNprojection("China")
+
+eu_bound %>%
+  graph_UNprojection("European Union")
+
+us_bound %>%
+  graph_UNprojection("United States")
+
+fgisprojection <- ggplot(fgis_bound, aes(x = Time, y = Value, color = Projection)) +
+  geom_line(linewidth = 0.5) +
+  #geom_point(size = 0.5) +
+  facet_wrap(~ Location, scales = "free_y") +
   labs(
-    title = "Population Projections in India",
+    title = "UN Population Projection - France, Germany, Italy, Spain", 
+    subtitle = "Median Estimate and No-Migration Scenarios",
     x = "Year",
     y = "Population") +
   scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
   theme(panel.background = element_rect(fill = 'white', color = 'white'), 
-        panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid'),
-        panel.grid.minor = element_line(color = '#EBEBEB', linewidth = 0.5))
-ggsave(here("outputs/UN_India_combined.png"))
-
-japanprojection <- ggplot(japan_bound, aes(x = Time, y = Value, color = Projection))+
-  geom_line(linewidth = 1) +
-  geom_point(size = 0.5) +
-  labs(
-    title = "Population Projections in Japan",
-    x = "Year",
-    y = "Population") +
-  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
-  theme_minimal() +
-  theme(panel.background = element_rect(fill = 'white', color = 'white'))
-ggsave(here("outputs/UN_Japan_combined.png"))
-
-
-chinaprojection <- ggplot(china_bound, aes(x = Time, y = Value, color = Projection))+
-  geom_line(linewidth = 1) +
-  geom_point(size = 0.5) +
-  labs(
-    title = "Population Projections in China", 
-    x = "Year", 
-    y = "Population") +
-  scale_y_continuous(labels = function(x) paste0(x/1e9, "B")) +
-  theme_minimal()
-
-euprojection <- ggplot(eu_bound, aes(x = Time, y = Value, color = Projection))+
-  geom_line(linewidth = 1) +
-  geom_point(size = 0.5) +
-  labs(
-    title = "Population Projections in the EU", 
-    x = "Year", 
-    y = "Population") +
-  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
-  theme_minimal()
-
-usprojection <- ggplot(us_bound, aes(x = Time, y = Value, color = Projection))+
-  geom_line(linewidth = 1) +
-  geom_point(size = 0.5) +
-  labs(
-    title = "Population Projections in the US",
-    x = "Year",
-    y = "Population") +
-  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
-  theme_minimal()
-
-fgisprojection <- ggplot(fgis_bound, aes(x = Time, y = Value, color = Projection)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 0.5) +
-  facet_wrap(~ Location, scales = "free_y") +
-  labs(
-    title = "Population Projections: France, Germany, Italy, Spain", 
-    x = "Year",
-    y = "Population") +
-  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
-  theme_minimal() +
+        panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid', linewidth = 0.2),
+        panel.grid.minor = element_line(color = '#EBEBEB', linewidth = 0.2))
   theme(legend.position = "bottom")
 
+ggsave(here(paste0("outputs/UN_FGIS_combined.png")))
+
+
+
+
+# US CENSUS ----------------------------------------------------------------------
 uscensusprojection <- ggplot(us_census_adjustment, aes(x = Time, y = Value, color = Projection)) +
   geom_line(linewidth = 1) +
   geom_point(size = 0.5) +
