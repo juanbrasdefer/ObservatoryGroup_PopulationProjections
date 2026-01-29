@@ -27,16 +27,24 @@ here::i_am("code/graphing.R")
 
 # Import UN Data -------------------------------------------------------------
 
+## India -------------------------------------------------------------------
+india_median <- read_csv(here("data/UN_data/UN Population Data India.csv"))
+india_nomigration <- read_csv(here("data/UN_data/UN Population Data India No Migration.csv"))
+india_median$Projection <- "Median"
+india_nomigration$Projection <- "No Migration"
+india_bound <- rbind(india_median, india_nomigration) # joining both, LONG FORMAT!!
+
+
 ## China and Japan ----------------------------------------------------------
 china_median <- read_csv(here("data/UN_data/UN Population Data China.csv"))
 china_nomigration <- read_csv(here("data/UN_data/UN Population Data China No Migration.csv"))
-china_median$Projection <- "Medium"
+china_median$Projection <- "Median"
 china_nomigration$Projection <- "No Migration"
 china_bound <- rbind(china_median, china_nomigration) # joining both, LONG FORMAT!!
 
 japan_median <- read_csv(here("data/UN_data/UN Population Data Japan.csv"))
 japan_nomigration <- read_csv(here("data/UN_data/UN Population Data Japan No Migration.csv"))
-japan_median$Projection <- "Medium"
+japan_median$Projection <- "Median"
 japan_nomigration$Projection <- "No Migration"
 japan_bound <- rbind(japan_median, japan_nomigration)
 
@@ -49,7 +57,7 @@ eu_median <- read_csv(here("data/UN_data/UN Population Data EU.csv")) # data is 
 eu_median <- aggregate(Value ~ Time, data = eu_median, FUN = sum) # so we aggregate to reach Euro level
 eu_nomigration <- read_csv(here("data/UN_data/UN Population Data EU No Migration.csv"))
 eu_nomigration <- aggregate(Value ~ Time, data = eu_nomigration, FUN = sum) # same aggregation step
-eu_median$Projection <- "Medium"
+eu_median$Projection <- "Median"
 eu_nomigration$Projection <- "No Migration"
 eu_bound <- rbind(eu_median, eu_nomigration)
 
@@ -63,7 +71,7 @@ fgis_bound <- rbind(fgis_median, fgis_nomigration)
 # US - High level, total population
 us_median <- read_csv(here("data/UN_data/UN Population Data US.csv"))
 us_nomigration <- read_csv(here("data/UN_data/UN Population Data US No Migration.csv"))
-us_median$Projection <- "Medium"
+us_median$Projection <- "Median"
 us_nomigration$Projection <- "No Migration"
 us_bound <- rbind(us_median, us_nomigration)
 
@@ -124,16 +132,29 @@ us_encounters1 <- aggregate(encounter_count ~ fiscal_year,
 
 # Eurostat data ----------------------------------------------------------------
 eurostat_baseline <- read_csv(here("data/eurostat_data/Eurostat Projections.csv"))
+
 # renaming columns to match the naming conventions from UN data
-names(eurostat_baseline)[1] <- "Projection"
-names(eurostat_baseline)[2] <- "Location"
-names(eurostat_baseline)[3] <- "Time"
-names(eurostat_baseline)[4] <- "Value"
+eurostat_baseline <- eurostat_baseline %>%
+  rename(Projection = "Type of projection",
+         Location = "Geopolitical entity (reporting)",
+         Time = "TIME_PERIOD",
+         Value = "OBS_VALUE")
 
 
 
 # Graphing -----------------------------------------------------------
-japanprojection <- ggplot(japan, aes(x = Time, y = Value, color = Projection))+
+indiaprojection <- ggplot(india_bound, aes(x = Time, y = Value, color = Projection))+
+  geom_line(linewidth = 1) +
+  geom_point(size = 0.5) +
+  labs(
+    title = "Population Projections in India",
+    x = "Year",
+    y = "Population") +
+  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
+  theme_minimal()
+ggsave(here("outputs/UN_India_combined.png"))
+
+japanprojection <- ggplot(japan_bound, aes(x = Time, y = Value, color = Projection))+
   geom_line(linewidth = 1) +
   geom_point(size = 0.5) +
   labs(
@@ -143,7 +164,7 @@ japanprojection <- ggplot(japan, aes(x = Time, y = Value, color = Projection))+
   scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
   theme_minimal()
 
-chinaprojection <- ggplot(china, aes(x = Time, y = Value, color = Projection))+
+chinaprojection <- ggplot(china_bound, aes(x = Time, y = Value, color = Projection))+
   geom_line(linewidth = 1) +
   geom_point(size = 0.5) +
   labs(
@@ -153,7 +174,7 @@ chinaprojection <- ggplot(china, aes(x = Time, y = Value, color = Projection))+
   scale_y_continuous(labels = function(x) paste0(x/1e9, "B")) +
   theme_minimal()
 
-euprojection <- ggplot(eu, aes(x = Time, y = Value, color = Projection))+
+euprojection <- ggplot(eu_bound, aes(x = Time, y = Value, color = Projection))+
   geom_line(linewidth = 1) +
   geom_point(size = 0.5) +
   labs(
@@ -163,7 +184,7 @@ euprojection <- ggplot(eu, aes(x = Time, y = Value, color = Projection))+
   scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
   theme_minimal()
 
-usprojection <- ggplot(us, aes(x = Time, y = Value, color = Projection))+
+usprojection <- ggplot(us_bound, aes(x = Time, y = Value, color = Projection))+
   geom_line(linewidth = 1) +
   geom_point(size = 0.5) +
   labs(
@@ -173,7 +194,7 @@ usprojection <- ggplot(us, aes(x = Time, y = Value, color = Projection))+
   scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
   theme_minimal()
 
-fgisprojection <- ggplot(fgis, aes(x = Time, y = Value, color = Projection)) +
+fgisprojection <- ggplot(fgis_bound, aes(x = Time, y = Value, color = Projection)) +
   geom_line(linewidth = 1) +
   geom_point(size = 0.5) +
   facet_wrap(~ Location, scales = "free_y") +
