@@ -54,9 +54,9 @@ eastasia_bound <- rbind(japan, china)
 ## EU ---------------------------------------------------------
 # EU - High level, total population
 eu_median <- read_csv(here("data/UN_data/UN Population Data EU.csv")) # data is country-level
-eu_median <- aggregate(Value ~ Time, data = eu_median, FUN = sum) # so we aggregate to reach Euro level
+eu_median <- aggregate(Value ~ year, data = eu_median, FUN = sum) # so we aggregate to reach Euro level
 eu_nomigration <- read_csv(here("data/UN_data/UN Population Data EU No Migration.csv"))
-eu_nomigration <- aggregate(Value ~ Time, data = eu_nomigration, FUN = sum) # same aggregation step
+eu_nomigration <- aggregate(Value ~ year, data = eu_nomigration, FUN = sum) # same aggregation step
 eu_median$Projection <- "Median"
 eu_nomigration$Projection <- "No Migration"
 eu_bound <- rbind(eu_median, eu_nomigration)
@@ -78,19 +78,19 @@ us_bound <- rbind(us_median, us_nomigration)
 ### US Population Adjustment --------------------------------------------------
 
 us_workingage <- read_csv(here("data/UN_data/UN Population Data US Working Age.csv"))
-# this step is the same as doing group_by(location, time)
+# this step is the same as doing group_by(location, year)
 # which is just USA and then by year
 # the 'data' argument extracts the age ranges that are classified as 'working age'
 # which does not mean the ages 67, 75, 57 etc
 # but rather these are the numeric codes for age ranges like 57 = 25-29
-us_workingage <- aggregate(Value ~ Location + Time, 
+us_workingage <- aggregate(Value ~ Location + year, 
                         data = us_workingage[us_workingage$AgeId %in% c(67, 75, 57, 62, 63, 64, 69, 66, 68, 60), ],
                         FUN = sum)
 
 # adds new column with adjusted population numbers, using adjustment rates
 # calculates difference between original UN data and adjusted, as percentage
 # (which is just the same rate we adjusted by)
-adjust_working_pop <- function(data, year_col = "Time", pop_col = "Value") {
+adjust_working_pop <- function(data, year_col = "year", pop_col = "Value") {
   years <- data[[year_col]] # pull list of all year values
   population <- data[[pop_col]] # pull list of all population values
   adj_rate <- ifelse(years < 2000, 0.03, # for pre-2000, new estimate will be 0.97 of original 
@@ -137,7 +137,7 @@ eurostat_baseline <- read_csv(here("data/eurostat_data/Eurostat Projections.csv"
 eurostat_baseline <- eurostat_baseline %>%
   rename(Projection = "Type of projection",
          Location = "Geopolitical entity (reporting)",
-         Time = "TIME_PERIOD",
+         year = "TIME_PERIOD",
          Value = "OBS_VALUE")
 
 
@@ -145,7 +145,7 @@ eurostat_baseline <- eurostat_baseline %>%
 # Graphing -----------------------------------------------------------
 graph_UNprojection <- function(df, region_name){
   df %>%
-    ggplot(aes(x = Time, y = Value, color = Projection))+
+    ggplot(aes(x = year, y = Value, color = Projection))+
     geom_line(linetype = 1, linewidth = 0.5) +
     #geom_point(size = 0.5) +
     labs(
@@ -177,7 +177,7 @@ eu_bound %>%
 us_bound %>%
   graph_UNprojection("United States")
 
-fgisprojection <- ggplot(fgis_bound, aes(x = Time, y = Value, color = Projection)) +
+fgisprojection <- ggplot(fgis_bound, aes(x = year, y = Value, color = Projection)) +
   geom_line(linewidth = 0.5) +
   #geom_point(size = 0.5) +
   facet_wrap(~ Location, scales = "free_y") +
@@ -197,8 +197,11 @@ ggsave(here(paste0("outputs/UN_FGIS_combined.png")))
 
 
 
+
+
+
 # US CENSUS ----------------------------------------------------------------------
-uscensusprojection <- ggplot(us_census_adjustment, aes(x = Time, y = Value, color = Projection)) +
+uscensusprojection <- ggplot(us_census_adjustment, aes(x = year, y = Value, color = Projection)) +
   geom_line(linewidth = 1) +
   geom_point(size = 0.5) +
   facet_wrap(~ Location, scales = "free_y") +
@@ -221,7 +224,7 @@ encountersplot <- ggplot(us_encounters, aes(x = fiscal_year, y = encounter_count
   scale_y_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.1))) +
   theme_minimal()
 
-eurostat_plot <- ggplot(eurostat_baseline, aes(x = Time, y = Value, color = Projection)) +
+eurostat_plot <- ggplot(eurostat_baseline, aes(x = year, y = Value, color = Projection)) +
   geom_line(linewidth = 1) +
   geom_point(size = 0.5) +
   facet_wrap(~ Location, scales = "free_y") +
