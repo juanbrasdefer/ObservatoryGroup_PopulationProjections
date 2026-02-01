@@ -29,15 +29,16 @@ archival_2015_m_EU_long <- archival_2015_m_EU %>%
 
 
 # Import Eurostat true data ----------------------------------------------------------------
-eurostat_feb2024 <- read_tsv(here("data/eurostat_data/estat_demo_pjan.tsv"),
+actuals_eurostat <- read_tsv(here("data/eurostat_data/estat_demo_pjan.tsv"),
                locale = locale(encoding = "UTF-8",
                                decimal_mark = ",",
                                grouping_mark = "."))
 
 ## FGIS
-eurostat_feb2024_fgis_long <- eurostat_feb2024 %>%
+actuals_eurostat_clean_long <- actuals_eurostat %>%
   rename(index = 1) %>% # rename column "freq,unit,age,sex,geo\TIME_PERIOD" using its index, 1
-  filter(index %in% c("A,NR,TOTAL,T,DE_TOT", # germany total ages, total sexes, total country
+  filter(index %in% c("A,NR,TOTAL,M,EU27_2020", # Europe 27 members (2020, excludes UK)
+                      "A,NR,TOTAL,T,DE_TOT", # germany total ages, total sexes, total country
                       "A,NR,TOTAL,T,FR", # france, total ages, total sexes
                       "A,NR,TOTAL,T,ES", # spain, total ages, total sexes
                       "A,NR,TOTAL,T,IT")) %>% # italy, total ages, total sexes
@@ -45,6 +46,7 @@ eurostat_feb2024_fgis_long <- eurostat_feb2024 %>%
                names_to = "year", # pivot year columns to new single column, 'year'
                values_to = "Value") %>% # 'Values' = estimates
   mutate(index = recode(index, 
+                        "A,NR,TOTAL,M,EU27_2020" = "EU27-(2020)",
                         "A,NR,TOTAL,T,DE_TOT" = "Germany", 
                         "A,NR,TOTAL,T,FR" = "France",
                         "A,NR,TOTAL,T,ES" = "Spain",
@@ -53,21 +55,21 @@ eurostat_feb2024_fgis_long <- eurostat_feb2024 %>%
   filter(year >= 1991) %>% # 1991 is the first year where all countries have a value
                                 # france had no values before 1991
   rename(Location = "index") %>%
-  mutate(Projection = "Eurostat2024", # add column to show what projection this is
-         Value = parse_number(Value)) %>% # remove 'flag' characters like the 'b' and 'p'
+  mutate(Projection = "Eurostat2025") %>% # add column to show what projection this is
   select(Location, year, Projection, Value) # re-order columns
 
 # bind
-comparison_UN_Eurostat2024_bound <- fgis_median %>%
-  rename(year = "Time") %>%
+comparison_UN_EurostatActuals_bound <- fgis_median %>%
   mutate(Projection = recode(Projection, "Median" = "UNMedian")) %>%
-  rbind(eurostat_feb2024_fgis_long) %>%
+  rbind(actuals_eurostat_clean_long) %>%
+  filter(!Location %in% c("EU27-(2020)")) %>% # and drop EU observations since we dont need them for graph
+  mutate(Value = parse_number(Value)) %>% # remove 'flag' characters like the 'b' and 'p'
   filter(year <= 2050) %>% # let's get rid of too-far off projections
   filter(year >= 2005) # and start from 10 years before the projections of UN
-
-# graph
+  
+# graph ----------------------------------------------------------------
 #letsgoooooooo
-fgisprojection <- comparison_UN_Eurostat2024_bound %>%
+fgisprojection <- comparison_UN_EurostatActuals_bound %>%
   ggplot(aes(x = year, y = Value, color = Projection)) +
   geom_vline(xintercept = 2015, color = "darkred", linetype = "dashed", linewidth = 0.5) +
   geom_line(linewidth = 0.5) +
@@ -78,7 +80,7 @@ fgisprojection <- comparison_UN_Eurostat2024_bound %>%
     subtitle = "Eurostat True Figures vs. UN 2015 Forecast",
     x = "Year",
     y = "Population") +
-  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
+  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) + # 1e6 means removing 6 zeros from scale
   theme(panel.background = element_rect(fill = 'white', color = 'white'), 
         panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid', linewidth = 0.2),
         panel.grid.minor = element_line(color = '#EBEBEB', linewidth = 0.2),
