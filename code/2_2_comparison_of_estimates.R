@@ -80,6 +80,9 @@ fgisprojection <- comparison_UN_EurostatActuals_bound %>%
     subtitle = "Eurostat True Figures vs. UN 2015 Forecast",
     x = "Year",
     y = "Population") +
+  scale_color_manual(values = c(
+    "UNMedian" = "#1b9e77",
+    "Eurostat2025"      = "#7570b3")) +
   scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) + # 1e6 means removing 6 zeros from scale
   theme(panel.background = element_rect(fill = 'white', color = 'white'), 
         panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid', linewidth = 0.2),
@@ -91,26 +94,26 @@ fgisprojection <- comparison_UN_EurostatActuals_bound %>%
 ggsave(here("outputs/Eurostat_UN_comparison.png"),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
-
-
-# 2019 point-in-time data ------------------------------------------------------
-archival_2019_median <- read_csv(here("data/UN_data/UN_archival_2019_median.csv")) %>%
-  rename(Location = "Region, subregion, country or area *") %>%
-  mutate("Variant" = "Median") %>%
-  rename(Projection = "Variant")
-
-archival_2019_m_EU <- archival_2019_median %>%
-  filter(Location == "EUROPE")
-
-
-temp <- archival_2019_m_EU %>%
-  pivot_longer(
-    cols = -c(Projection, Location),
-    names_to = "year",
-    values_to = "Value"
-  ) %>%
-  mutate(
-    year = as.integer(year))
+# 
+# 
+# # 2019 point-in-time data ------------------------------------------------------
+# archival_2019_median <- read_csv(here("data/UN_data/UN_archival_2019_median.csv")) %>%
+#   rename(Location = "Region, subregion, country or area *") %>%
+#   mutate("Variant" = "Median") %>%
+#   rename(Projection = "Variant")
+# 
+# archival_2019_m_EU <- archival_2019_median %>%
+#   filter(Location == "EUROPE")
+# 
+# 
+# temp <- archival_2019_m_EU %>%
+#   pivot_longer(
+#     cols = -c(Projection, Location),
+#     names_to = "year",
+#     values_to = "Value"
+#   ) %>%
+#   mutate(
+#     year = as.integer(year))
 
 
 
@@ -122,19 +125,20 @@ temp <- archival_2019_m_EU %>%
 
 
 # Crystal - Eurostat data ----------------------------------------------------------------
-# eurostat_baseline <- read_csv(here("data/eurostat_data/Eurostat Projections.csv"))
-# 
-# # renaming columns to match the naming conventions from UN data
-# eurostat_baseline <- eurostat_baseline %>%
-#   rename(Projection = "Type of projection",
-#          Location = "Geopolitical entity (reporting)",
-#          year = "TIME_PERIOD",
-#          Value = "OBS_VALUE")
+eurostat_baseline <- read_csv(here("data/eurostat_data/Eurostat Projections.csv"))
+
+# renaming columns to match the naming conventions from UN data
+eurostat_baseline <- eurostat_baseline %>%
+  rename(Projection = "Type of projection",
+         Location = "Geopolitical entity (reporting)",
+         year = "TIME_PERIOD",
+         Value = "OBS_VALUE")
 
 
 
 # Crystal - Graphing Eurostat Projections ------------------------------------
-eurostat_plot <- ggplot(eurostat_baseline, aes(x = year, y = Value, color = Projection)) +
+eurostat_baseline %>%
+  ggplot(aes(x = year, y = Value, color = Projection)) +
   geom_line(linewidth = 1) +
   geom_point(size = 0.5) +
   facet_wrap(~ Location, scales = "free_y") +
@@ -142,6 +146,14 @@ eurostat_plot <- ggplot(eurostat_baseline, aes(x = year, y = Value, color = Proj
     title = "Eurostat Working Population Projections: France, Germany, Italy, Spain", 
     x = "Year",
     y = "Population") +
+  scale_color_manual(values = c(
+      "Baseline projections" = "#1b9e77",
+      "Sensitivity test: no migration"      = "#7570b3")) +
   scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
   theme_minimal() +
   theme(legend.position = "bottom")
+
+
+ggsave(here("outputs/Eurostat_Projections.png"),
+       width = 9,height = 5,   # 2:1 ratio
+       units = "in", dpi = 300)

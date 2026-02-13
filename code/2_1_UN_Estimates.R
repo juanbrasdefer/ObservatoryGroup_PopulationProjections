@@ -87,6 +87,9 @@ graph_UNprojection <- function(df, region_name){
       subtitle = "Median Estimate and No-Migration Scenarios",
       x = "Year",
       y = "Population") +
+    scale_color_manual(values = c(
+      "Median" = "#1b9e77",
+      "No Migration"      = "lightgrey")) +
     scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
     theme(panel.background = element_rect(fill = 'white', color = 'white'), 
           panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid'),
@@ -120,6 +123,9 @@ fgisprojection <- ggplot(fgis_bound, aes(x = year, y = Value, color = Projection
     subtitle = "Median Estimate and No-Migration Scenarios",
     x = "Year",
     y = "Population") +
+  scale_color_manual(values = c(
+    "Median" = "#1b9e77",
+    "Zero-migration"      = "lightgrey")) +
   scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
   theme(panel.background = element_rect(fill = 'white', color = 'white'), 
         panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid', linewidth = 0.2),

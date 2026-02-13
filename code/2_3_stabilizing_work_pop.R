@@ -89,3 +89,70 @@ ggsave(here("outputs/NatalityRates_fgis.png"),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
 
+
+
+
+
+
+
+
+
+
+
+
+# entrants exits from work pop --------------------------------------------
+# Import Eurostat true data ----------------------------------------------------------------
+actuals_eurostat <- read_tsv(here("data/eurostat_data/estat_demo_pjan.tsv"),
+                             locale = locale(encoding = "UTF-8",
+                                             decimal_mark = ",",
+                                             grouping_mark = "."))
+
+## DE stable calcs
+stable_de_calcs_clean <- actuals_eurostat %>%
+  rename(index = 1) %>% # rename column "freq,unit,age,sex,geo\TIME_PERIOD" using its index, 1
+  filter(index %in% c(#"A,NR,Y17,F,DE_TOT",
+                      "A,NR,Y18,F,DE_TOT",
+                      #"A,NR,Y64,F,DE_TOT",
+                      "A,NR,Y65,F,DE_TOT"
+                      )) %>% 
+  pivot_longer(cols = -index, # means: pivot everything except this column
+               names_to = "year", # pivot year columns to new single column, 'year'
+               values_to = "pop") %>% # 'Values' = estimates
+  mutate(index = recode(index, 
+                        "A,NR,Y18,F,DE_TOT" = "18yr",
+                        "A,NR,Y65,F,DE_TOT" = "65yr"
+                        )) %>%
+  mutate(year = as.integer(year)) %>% # make sure years are read as numbers
+  mutate(pop = parse_number(pop)) %>%   # converts "411641" or "411,641" or "411641 p" -> 411641
+  filter(year >= 2000) %>% 
+  rename(age = "index") %>%
+  select(age, year, pop) # re-order columns
+
+
+
+stable_de_calcs_clean %>%
+  ggplot(aes(x = year, y = pop, color = age)) +
+  #geom_vline(xintercept = 2015, color = "darkred", linetype = "dashed", linewidth = 0.5) +
+  geom_line(linewidth = 0.5) +
+  scale_color_manual(values = c("18yr" = "#1C8C1F",
+                                "65yr" = "#311380"),
+                     name = "Age") +
+  labs(
+    title = "Entrants and Exits of Labour Market - DE", 
+    subtitle = "Share of Population Aged 18yrs and 65yrs, Annually",
+    x = "Year",
+    y = "Population") +
+  scale_y_continuous(labels = function(x) paste0(x/1e5, "M"),
+                     limits = c(0, 700000)) + 
+  theme(panel.background = element_rect(fill = 'white', color = 'white'), 
+        panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid', linewidth = 0.2),
+        panel.grid.minor = element_line(color = '#EBEBEB', linewidth = 0.2),
+        legend.position = "bottom",
+        text = element_text(family="Times New Roman"))
+
+
+
+ggsave(here("outputs/Stable_Entrants_Exits.png"),
+       width = 9,height = 5,   # 2:1 ratio
+       units = "in", dpi = 300)
+
