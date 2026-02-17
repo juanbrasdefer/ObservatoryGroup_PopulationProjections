@@ -147,6 +147,54 @@ ggsave(here("outputs/Eurostat_UN24_comparison.png"),
        units = "in", dpi = 300)
 
 
+# UN Error calcs -------------------------------
+
+temp_UN24 <- comparison_UN24_EurostatActuals_bound %>%
+  mutate(loc_year_id = paste0(Location,"_",year)) %>%
+  filter(Projection == "UNMedian2024") %>%
+  rename(UNMedian2024 = "Value")
+
+temp_Eurostat25 <- comparison_UN24_EurostatActuals_bound %>%
+  mutate(loc_year_id = paste0(Location,"_",year)) %>%
+  filter(Projection == "Eurostat2025") %>%
+  rename(Eurostat2025 = "Value")
+
+errors_UN24_Eurostat <- temp_Eurostat25 %>%
+  select(-c(Location, year, Projection)) %>%
+  left_join(temp_UN24, by = "loc_year_id") %>%
+  mutate(UN_Error = round((Eurostat2025 - UNMedian2024),0)) %>%
+  select(Location, 
+         year, 
+         Eurostat2025, 
+         UNMedian2024,
+         UN_Error)
+
+# UN error graph ----------------------------------------------------------
+
+
+#letsgoooooooo
+fgis_errors <- errors_UN24_Eurostat %>%
+  ggplot(aes(x = year, y = UN_Error)) +
+  geom_line(linewidth = 0.5) +
+  facet_wrap(~ Location, scales = "free_y") +
+  labs(
+    title = "UN Population Estimate Error by Year, 2005-2024", 
+    subtitle = "Error = (Eurostat True Figures) - (UN 2024 Forecast)",
+    caption = "'Negative' Error means UN overestimated; Positive Error means UN underestimated true pop",
+    x = "Year",
+    y = "Error Size (Population)") +
+  scale_color_manual(values = "darkred") +
+  scale_y_continuous(labels = function(x) paste0(x/1e3, "K")) + # 1e6 means removing 6 zeros from scale
+  theme(panel.background = element_rect(fill = 'white', color = 'white'), 
+        panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid', linewidth = 0.2),
+        panel.grid.minor = element_line(color = '#EBEBEB', linewidth = 0.2),
+        legend.position = "bottom",
+        text = element_text(family="Times New Roman"))
+
+
+ggsave(here("outputs/UN24_ErrorSize_fgis.png"),
+       width = 9,height = 5,   # 2:1 ratio
+       units = "in", dpi = 300)
 
 # graph all three together ----------------------------------------------------------------
 
