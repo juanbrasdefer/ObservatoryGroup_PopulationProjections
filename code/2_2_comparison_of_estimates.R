@@ -7,6 +7,7 @@ here::i_am("code/2_2_comparison_of_estimates.R")
 
 # setting some global variables for later
 min_year <- 2005
+shorttraining_year <- 2020
 last_Eurostat_year <- 2025
 max_year <- 2050
 
@@ -311,7 +312,7 @@ predicted_de$Calibrated <- predict(model_de,
                                    newdata = predictable_de)
 
 
-### calibrated de graphing -------------------------------------
+### calibrated DE graphing -------------------------------------
 
 # first, pivot longer
 predicted_de_long <- predicted_de %>%
@@ -388,7 +389,7 @@ predicted_it$Calibrated <- predict(model_it,
                                    newdata = predictable_it)
 
 
-### calibrated de graphing -------------------------------------
+### calibrated IT graphing -------------------------------------
 
 # first, pivot longer
 predicted_it_long <- predicted_it %>%
@@ -469,7 +470,7 @@ predicted_es$Calibrated <- predict(model_es,
                                    newdata = predictable_es)
 
 
-### calibrated de graphing -------------------------------------
+### calibrated ES graphing -------------------------------------
 
 # first, pivot longer
 predicted_es_long <- predicted_es %>%
@@ -509,6 +510,85 @@ calibrated_full_es <- modelable_es %>%
 
 
 ggsave(here("outputs/Calibrated_full_es.png"),
+       width = 9,height = 5,   # 2:1 ratio
+       units = "in", dpi = 300)
+
+
+## LM re-modeling, short --------------------------------------------------------
+### model fit -------------------------------------------------------
+country_to_model <- "Spain" 
+training_period <- "20yrs"
+shorttraining_year <- 2005
+modelable_es <- errors_UN24_Eurostat_fgis %>%
+  filter(Location == country_to_model) %>%
+  filter(year >= shorttraining_year) %>%
+  arrange(year) %>%
+  tibble::rowid_to_column("year_as_index") 
+
+# we fit a linear regression model to the Eurostat and UN relationship
+model_es <- lm(Eurostat2025 ~ UNMedian2024 + year_as_index, data = modelable_es)
+
+### prediction -----------------------------------------------------
+# dataframe that we will predict off of
+predictable_es <- clean_UN24_fgis %>%
+  filter(Location == country_to_model) %>%
+  arrange(year) %>%
+  tibble::rowid_to_column("year_as_index") %>%
+  select(-Projection, -loc_year_id) %>%
+  filter(year > last_Eurostat_year) # 2025
+
+# and predict from 2026 to 2100
+predicted_es = data.frame(predictable_es) # make a copy first
+predicted_es$Calibrated <- predict(model_es, 
+                                   newdata = predictable_es)
+
+
+### calibrated ES graphing -------------------------------------
+
+# first, pivot longer
+predicted_es_long <- predicted_es %>%
+  pivot_longer(cols = c(UNMedian2024, Calibrated),
+               names_to = "Projection",
+               values_to = "Value")
+
+# then, graph 
+calibrated_full_es <- errors_UN24_Eurostat_fgis %>%
+  filter(Location == country_to_model) %>%
+  #arrange(year) %>%
+  tibble::rowid_to_column("year_as_index") %>% # not using this colum; just for rbind purposes
+  select(-UN_Error) %>%
+  pivot_longer(cols = c(UNMedian2024, Eurostat2025), # also pivot other df
+               names_to = "Projection",
+               values_to = "Value") %>%
+  rbind(predicted_es_long) %>%
+  ggplot(aes(x = year, y = Value, color = Projection, linetype = Projection)) +
+  geom_line(linewidth = 1) +
+  geom_vline(xintercept = shorttraining_year, color = "orange", linetype = "dashed", linewidth = 0.5) +
+  geom_vline(xintercept = 2025, color = "orange", linetype = "dashed", linewidth = 0.5) +
+  #facet_wrap(~ Location, scales = "free_y") +
+  labs(
+    title = paste0("Comparison - UN24 Projection vs. Calibrated Projection - ",country_to_model), 
+    subtitle = paste0("Post-Linear-Model Calibration Result - ",training_period, " Training"),
+    x = "Year",
+    y = "Population") +
+  scale_x_continuous(breaks = function(x) unique(c(min_year, scales::pretty_breaks()(x)))) +
+  scale_color_manual(values = c(
+    Eurostat2025 = "#1b9e77",
+    Calibrated = "#3bdead",
+    UNMedian2024      = "darkred")) +
+  scale_linetype_manual(values = c(
+    "Eurostat2025" = "solid",
+    "Calibrated" = "dashed",
+    "UNMedian2024" = "solid")) +
+  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) + # 1e3 means removing 3 zeros from scale
+  theme(panel.background = element_rect(fill = 'white', color = 'white'), 
+        panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid', linewidth = 0.2),
+        panel.grid.minor = element_line(color = '#EBEBEB', linewidth = 0.2),
+        legend.position = "bottom",
+        text = element_text(family="Times New Roman"))
+
+
+ggsave(here(paste0("outputs/Calibrated_",training_period,"tr_es.png")),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
 
