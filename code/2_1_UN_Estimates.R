@@ -56,7 +56,9 @@ eu_bound <- rbind(eu_median, eu_nomigration)
 
 # EU Zoom In - France, Germany, Italy, Spain
 fgis_median <- read_csv(here("data/UN_data/UN Population Data FGIS.csv")) %>%
-  rename(year = "Time")
+  rename(year = "Time") %>%
+  mutate(Projection = recode(Projection, "Median" = "UNMedian2024")) # change values inside column
+  
 fgis_nomigration <- read_csv(here("data/UN_data/UN Population Data FGIS No Migration.csv")) %>%
   rename(year = "Time")
 fgis_bound <- rbind(fgis_median, fgis_nomigration)
