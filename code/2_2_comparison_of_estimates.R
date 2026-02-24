@@ -42,33 +42,6 @@ actuals_eurostat_clean_long <- actuals_eurostat %>%
   select(Location, year, Projection, Value) # re-order columns
 
 
-# Import UN Historical (2015) data --------------------------------------------------
-archival_2015_median <- read_csv(here("data/UN_data/UN_archival_2015_median.csv")) %>%
-  rename(Location = "Major area, region, country or area *") %>%
-  mutate("Variant" = "UNMedian2015") %>%
-  rename(Projection = "Variant")
-
-
-archival_2015_m_fgis <- archival_2015_median %>%
-  filter(Location %in% c("France", "Germany", "Italy", "Spain"))
-
-
-archival_2015_m_fgis_long <- archival_2015_m_fgis %>%
-  pivot_longer(cols = -c(Projection, Location),
-               names_to = "year",
-               values_to = "Value" # 'Value' = estimate
-               ) %>%
-  mutate(year = as.integer(year)) %>%
-  mutate(Value = str_remove_all(Value, " ")) %>%
-  mutate(Value = as.integer(Value)) %>%
-  mutate(Value = Value*1000) # raising UN numbers by a factor of 1000 so as 
-  # to put them on the same scale as the Eurostat and UN 2024 numbers
-  # NOTE: while technically this is methodologically unsound, because we are 
-  # increasing Significant Figures (ie: coding it so that 57,243 appears as 57,243,000)
-  # it is okay to do, because we are only using it for graphing
-  # which anyway lacks the granularity to even see this change
-  
-
 # bind Eurostat and UN24 data --------------------------------
 comparison_UN24_EurostatActuals_bound <- fgis_median %>% # fgis_median is created in another R file
   rbind(actuals_eurostat_clean_long) 
@@ -644,6 +617,33 @@ ggsave(here(paste0("outputs/Calibrated_",training_period,"tr_es.png")),
 
 
 
+
+
+# Import UN Historical (2015) data --------------------------------------------------
+archival_2015_median <- read_csv(here("data/UN_data/UN_archival_2015_median.csv")) %>%
+  rename(Location = "Major area, region, country or area *") %>%
+  mutate("Variant" = "UNMedian2015") %>%
+  rename(Projection = "Variant")
+
+
+archival_2015_m_fgis <- archival_2015_median %>%
+  filter(Location %in% c("France", "Germany", "Italy", "Spain"))
+
+
+archival_2015_m_fgis_long <- archival_2015_m_fgis %>%
+  pivot_longer(cols = -c(Projection, Location),
+               names_to = "year",
+               values_to = "Value" # 'Value' = estimate
+  ) %>%
+  mutate(year = as.integer(year)) %>%
+  mutate(Value = str_remove_all(Value, " ")) %>%
+  mutate(Value = as.integer(Value)) %>%
+  mutate(Value = Value*1000) # raising UN numbers by a factor of 1000 so as 
+# to put them on the same scale as the Eurostat and UN 2024 numbers
+# NOTE: while technically this is methodologically unsound, because we are 
+# increasing Significant Figures (ie: coding it so that 57,243 appears as 57,243,000)
+# it is okay to do, because we are only using it for graphing
+# which anyway lacks the granularity to even see this change
 
 
 
