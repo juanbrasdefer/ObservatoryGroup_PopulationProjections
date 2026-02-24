@@ -445,8 +445,7 @@ for(i in 1:years_to_project){
 }
 
 
-### mortality working pop histogram -----------------------------------------
-
+### wpop all (cb, n, m) projection -----------------------------------------
 
 projection_mortality_de %>%
   filter(age_numeric >= 18,
@@ -469,6 +468,51 @@ ggsave(here("outputs/2_3_wpop_closedborders_mort_de.png"),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
 
+
+
+### current vs. wpop all (cb, n, m) projection -----------------------------------------
+
+projection_wpop_gap_de <- advanceable_n_de %>%
+  select(year, age_numeric, Value) %>%
+  filter(year == 2025) %>%
+  mutate(Projection = "2025WPop") %>%
+  filter(age_numeric >= 18,
+         age_numeric <= 64) %>%
+  group_by(year) %>%
+  summarise(work_pop = sum(Value, na.rm = TRUE), .groups="drop") 
+
+projection_wpop_gap_de <- tibble(
+  year = 2025:2100,
+  work_pop = projection_wpop_gap_de$work_pop,
+  Projection = "2025WPop") %>%
+  select(year, Projection, work_pop)
+
+projection_mortality_de %>%
+  mutate(Projection = "NoMigration") %>%
+  filter(age_numeric >= 18,
+         age_numeric <= 64) %>%
+  group_by(year, Projection) %>%
+  summarise(work_pop = sum(Value, na.rm = TRUE), .groups="drop") %>%
+  rbind(projection_wpop_gap_de) %>%
+  ggplot(aes(x = year, y = work_pop, color = Projection)) +
+  geom_line() +
+  labs(
+    title = "DE 2025 WorkPop vs. No-Migration WorkPop",
+    subtitle = "Eurostat, WPopAge = [18-64]",
+    caption = "Natality Rate 0.9%, 2023 Historical Mortality",
+    x = "Year",
+    y = "Population"
+  ) +
+  scale_color_manual(values = c(
+    "2025WPop" = "#1b9e77",
+    "NoMigration"      = "black")) +  
+#  geom_vline(xintercept = 2025, color = "lightblue", linetype = "dashed", linewidth = 0.5) +
+  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) # 1e6 means removing 6 zeros from scale
+
+
+ggsave(here("outputs/2_3_wpop_gap_cbnm_de.png"),
+       width = 9,height = 5,   # 2:1 ratio
+       units = "in", dpi = 300)
 
 
 # THINGS TO NOTE---------------------------------------------------
