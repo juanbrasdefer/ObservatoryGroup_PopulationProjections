@@ -6,7 +6,7 @@ here::i_am("code/2_3_2_stabilizing_fr.R")
 
 source(here("code/2_3_stabilizing_work_pop.R"))
 
-country_to_model <- "FR"
+country_to_model <- "EU"
 country_to_model_str <- "FR"
 
 birth_rate_fr <- 0.012   # example: 12 births per 1000 population

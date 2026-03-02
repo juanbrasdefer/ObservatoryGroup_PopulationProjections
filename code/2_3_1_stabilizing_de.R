@@ -31,10 +31,11 @@ advanceable_b_de %>%
     x = "Age",
     y = "Population"
   ) +
-  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) # 1e6 means removing 6 zeros from scale
+  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) + # 1e6 means removing 6 zeros from scale
+  theme(text = element_text(family="Times New Roman")) 
 
 
-ggsave(here("outputs/2_3_age_composition_2025_DE.png"),
+ggsave(here("outputs/2_3_de_age_composition_2025.png"),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
 
@@ -110,10 +111,10 @@ wpop_closedborders_de %>%
     y = "Population"
   ) +
   geom_vline(xintercept = 2025, color = "lightblue", linetype = "dashed", linewidth = 0.5) +
-  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) # 1e6 means removing 6 zeros from scale
+  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) + # 1e6 means removing 6 zeros from scale
+  theme(text = element_text(family="Times New Roman"))
 
-
-ggsave(here("outputs/2_3_wpop_closedborders_nat_de.png"),
+ggsave(here("outputs/2_3_de_wpop_closedborders_nat.png"),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
 
@@ -148,10 +149,10 @@ mortality_wpop_de %>%
     subtitle = "Eurostat Data [2025], WPop = [18-64]",
     x = "Age",
     y = "Population") +
-  scale_y_continuous(labels = function(x) paste0(x/1e3, "K")) # 1e6 means removing 6 zeros from scale
+  scale_y_continuous(labels = function(x) paste0(x/1e3, "K")) + # 1e6 means removing 6 zeros from scale
+  theme(text = element_text(family="Times New Roman"))
 
-
-ggsave(here("outputs/2_3_mortality_composition_wpop_2023_DE.png"),
+ggsave(here("outputs/2_3_de_mortality_composition_wpop_2023.png"),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
 
@@ -227,10 +228,10 @@ projection_mortality_de %>%
     y = "Population"
   ) +
   geom_vline(xintercept = 2025, color = "lightblue", linetype = "dashed", linewidth = 0.5) +
-  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) # 1e6 means removing 6 zeros from scale
+  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) + # 1e6 means removing 6 zeros from scale
+  theme(text = element_text(family="Times New Roman"))
 
-
-ggsave(here("outputs/2_3_wpop_closedborders_mort_de.png"),
+ggsave(here("outputs/2_3_de_wpop_closedborders_mort.png"),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
 
@@ -315,7 +316,7 @@ ggplot() +
   
   labs(
     title = "DE Working-Age Population: Stabilization Gap",
-    subtitle = "Eurostat Current [2025] WPop Stock vs. WPop Decay under No Migration",
+    subtitle = "Eurostat Current WPop Stock (2025) vs. WPop Decay under No Migration",
     caption = "Working Age = 18–64, Natality 0.9%, 2023 Mortality Schedule",
     x = "Year",
     y = "Population"
@@ -325,10 +326,10 @@ ggplot() +
                                 "NoMigration" = "black",
                                 "WPop2025" = "#1b9e77"),
                      breaks = c("Observed", "WPop2025", "NoMigration"))+
-  scale_y_continuous(labels = function(x) paste0(x/1e6, "M"))
+  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
+  theme(text = element_text(family="Times New Roman"))
 
-
-ggsave(here("outputs/2_3_wpop_integral_cbnm_de.png"),
+ggsave(here("outputs/2_3_de_wpop_integral_cbnm.png"),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
 
