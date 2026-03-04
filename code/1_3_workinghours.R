@@ -84,6 +84,9 @@ oecd_participation_wide <- oecd_participation %>% # Labour Utilisation (hours wo
   mutate(emp_participation = EMP/POP) %>%
   filter(year < 2024) # USA no 2024
 
+oecd_participation_wide %>%
+  group_by(CountryCode) %>%
+  summarise(avg_participation = mean(emp_participation))
 
 
 ## Graphing US EU labour force participation--------------------------------
@@ -94,7 +97,8 @@ oecd_participation_wide %>%
   scale_x_continuous(breaks = seq(2000, 2025, 5)) +
   #geom_hline(yintercept = 0, linetype = "dashed") +
   labs(
-    title = "US vs EU - Labour Force Participation Rate",
+    title = "US vs EU - Labour Participation Rate",
+    subtitle = "Percentage of Population that is Employed",
     x = "Year",
     y = "Participation Rate"
   ) +
@@ -104,4 +108,4 @@ oecd_participation_wide %>%
         panel.grid.minor = element_line(color = '#EBEBEB', linewidth = 0.2),legend.position = "bottom",
         text = element_text(family="Times New Roman"))
 
-ggsave(here(paste0("outputs/1_3_labourforce_participation.png")))
+ggsave(here("outputs/1_3_labour_participation.png"))
