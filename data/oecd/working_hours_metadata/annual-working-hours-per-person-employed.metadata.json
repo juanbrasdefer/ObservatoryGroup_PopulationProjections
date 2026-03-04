@@ -1,0 +1,39 @@
+{
+  "chart": {
+    "title": "Annual working hours per person employed",
+    "subtitle": "Regular hours worked by full-time and part-time workers, paid and unpaid overtime, hours worked in additional jobs, and time not worked because of public holidays, annual paid leave, strikes and labour disputes, and other reasons.",
+    "citation": "OECD - Productivity - Level of GDP per capita and productivity",
+    "originalChartUrl": "https://ourworldindata.org/grapher/annual-working-hours-per-person-employed?country=USA~European+Union+%2828+countries%29~DEU~FRA~ITA~ESP&v=1&csvType=filtered&useColumnShortNames=false",
+    "selection": [
+      "Korea",
+      "Italy",
+      "Germany",
+      "France",
+      "United Kingdom",
+      "United States",
+      "Japan",
+      "South Africa",
+      "Canada",
+      "Sweden",
+      "Mexico",
+      "Russia"
+    ]
+  },
+  "columns": {
+    "Subject:Average hours worked per person employed - PDB_LV": {
+      "titleShort": "Average hours worked per person employed",
+      "titleLong": "Average hours worked per person employed",
+      "unit": "Hours",
+      "timespan": "",
+      "type": "Numeric",
+      "owidVariableId": 87175,
+      "citationShort": " – processed by Our World in Data",
+      "citationLong": " – processed by Our World in Data. “Average hours worked per person employed” [dataset]. OECD - Productivity - Level of GDP per capita and productivity [original data].",
+      "fullMetadata": "https://api.ourworldindata.org/v1/indicators/87175.metadata.json"
+    }
+  },
+  "dateDownloaded": "2026-03-04",
+  "activeFilters": {
+    "country": "USA~European Union (28 countries)~DEU~FRA~ITA~ESP"
+  }
+}

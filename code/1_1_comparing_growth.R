@@ -246,10 +246,9 @@ wb_plot_data <- wb_adjusting_growth %>%
   pivot_longer(cols = c(gdp_growth, gdp_percap_growth),
                names_to = "measure",
                values_to = "value") %>%
-  mutate(
-    measure = recode(measure,
-                     gdp_growth = "Aggregate GDP Growth",
-                     gdp_percap_growth = "Per Capita GDP Growth"))
+  mutate(measure = recode(measure,
+                          gdp_growth = "Aggregate GDP Growth",
+                          gdp_percap_growth = "Per Capita GDP Growth"))
 
 
 
