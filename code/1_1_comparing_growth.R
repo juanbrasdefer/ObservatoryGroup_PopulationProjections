@@ -9,7 +9,7 @@ here::i_am("code/1_1_comparing_growth.R")
 
 wb_gdp_growth_raw <- read_csv(here("data/world_bank/worldbank_gdp_growth.csv"))
 
-wb_gdp_growth_comparison <- wb_gdp_growth_raw %>%
+wb_gdp_growth_nominal <- wb_gdp_growth_raw %>%
   rename(CountryName = "Country Name",
          CountryCode = "Country Code",
          IndicatorN = "Indicator Name",
@@ -32,7 +32,7 @@ wb_gdp_growth_comparison <- wb_gdp_growth_raw %>%
 
 country_to_plot = "USA"
 
-wb_gdp_growth_comparison %>%
+wb_gdp_growth_nominal %>%
   filter(CountryCode == country_to_plot) %>%
   ggplot(aes(x = year, y = gdp_growth)) +
   geom_point(size = 2, color = "navyblue", alpha = 0.7) +  # Simple scatter points
@@ -61,7 +61,7 @@ ggsave(here(paste0("outputs/1_1_", country_to_plot,"_gdpgrowth.png")))
 
 
 ## graph - gdp comparison ------------------------------------------------
-wb_gdp_growth_comparison %>%
+wb_gdp_growth_nominal %>%
   ggplot(aes(x = year, y = gdp_growth, color = CountryCode)) +
   geom_line(linewidth = 1) +
   labs(
@@ -138,8 +138,9 @@ wb_pop_growth_comparison %>%
   ggplot(aes(x = year, y = pop_growth, color = CountryCode)) +
   geom_line(linewidth = 1) +
   labs(
-    title = paste0("Comparison - EU vs. US Annual Pop Growth"), 
-    subtitle = "2000 - 2024, World Bank Data",
+    title = "US vs EU Population Growth, Annual", 
+    subtitle = "2000 - 2024",
+    caption = "Data: World Bank",
     x = "Year",
     y = "Pop Growth (%)") +
   scale_color_manual(values = c(
@@ -158,7 +159,7 @@ ggsave(here(paste0("outputs/1_1_comparison_popgrowth.png")))
 
 
 # BOTH --------------------------------------------------------
-wb_adjusting_growth <- wb_gdp_growth_comparison %>%
+wb_adjusting_growth <- wb_gdp_growth_nominal %>%
   left_join(wb_pop_growth_comparison,
             by = c("CountryCode", "CountryName", "year")) %>%
   mutate(gdp_percap_growth = gdp_growth - pop_growth)
@@ -193,15 +194,16 @@ ggsave(here(paste0("outputs/1_1_comparison_percapgrowth.png")))
 
 # GPT SUGGESTIONS ----------------------------------------------
 
-## plot 1 ------------------------------------
-wb_gdp_growth_comparison %>%
+## Nominal Growth ------------------------------------
+wb_gdp_growth_nominal %>%
   ggplot(aes(x = year, y = gdp_growth, color = CountryCode)) +
   geom_line(linewidth = 0.8) +
   scale_x_continuous(breaks = seq(2000, 2025, 5)) +
   geom_hline(yintercept = 0, linetype = "dashed") +
   labs(
-    title = "US vs EU Aggregate GDP Growth",
+    title = "US vs EU Aggregate GDP Growth, Annual",
     subtitle = "2000–2024",
+    caption = "Data: World Bank",
     x = "Year",
     y = "GDP Growth (%)"
   ) +
@@ -216,7 +218,7 @@ ggsave(here(paste0("outputs/1_1_gpt_comparison_gdp_growth.png")))
 
 
 
-## plot 2 --------------------------------------------
+## Adjusted Growth (adj for pop) --------------------------------------------
 
 wb_adjusting_growth %>%
   ggplot(aes(x = year, y = gdp_percap_growth, color = CountryCode)) +
@@ -224,7 +226,7 @@ wb_adjusting_growth %>%
   scale_x_continuous(breaks = seq(2000, 2025, 5)) +
   geom_hline(yintercept = 0, linetype = "dashed") +
   labs(
-    title = "US vs EU - Per Capita GDP Growth",
+    title = "US vs EU Per Capita GDP Growth",
     subtitle = "[GDP Growth %] – [Population Growth %]",
     x = "Year",
     y = "Per Capita GDP Growth (%)"
@@ -240,8 +242,8 @@ ggsave(here(paste0("outputs/1_1_gpt_comparison_percapgdp_growth.png")))
 
 
 
-## 3rd graph with all on one -----------------------------------
-wb_plot_data <- wb_adjusting_growth %>%
+## Adjusted & Nominal together -----------------------------------
+wb_adjusting_growth_long <- wb_adjusting_growth %>%
   select(CountryCode, year, gdp_growth, gdp_percap_growth) %>%
   pivot_longer(cols = c(gdp_growth, gdp_percap_growth),
                names_to = "measure",
@@ -252,7 +254,7 @@ wb_plot_data <- wb_adjusting_growth %>%
 
 
 
-wb_plot_data %>%
+wb_adjusting_growth_long %>%
   ggplot(aes(x = year,
              y = value,
              color = CountryCode,
@@ -273,7 +275,7 @@ wb_plot_data %>%
     "Aggregate GDP Growth" = 0.3
   )) +
   labs(
-    title = "US vs EU – Aggregate vs Per Capita GDP Growth",
+    title = "US vs EU - Aggregate vs Per Capita GDP Growth",
     subtitle = "Solid lines = Per Capita | Faded dashed lines = Aggregate",
     x = "Year",
     y = "Growth Rate (%)",
@@ -292,7 +294,7 @@ ggsave(here(paste0("outputs/1_1_gpt_comparison_allgrowths.png")))
 
 
 ## averages table ----------------------------------------
-wb_gdp_growth_comparison %>%
+wb_gdp_growth_nominal %>%
   group_by(CountryCode) %>%
   summarise(mean_gdp_growth = mean(gdp_growth, na.rm = TRUE))
 
@@ -305,3 +307,7 @@ wb_adjusted_growth_table <- wb_adjusting_growth %>%
   summarise(
     mean_gdp_growth = mean(gdp_growth, na.rm = TRUE),
     mean_percap_growth = mean(gdp_percap_growth, na.rm = TRUE))
+
+
+# and prepare this data for future use ----------------------------
+t1_result <- wb_adjusting_growth 

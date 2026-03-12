@@ -261,12 +261,4 @@ advance_year_mortality <- function(df, t, birth_rate, mortality_table){
 
 
 
-# DETOUR - EUROSTATPROJECTIONSEXIST -----------------------------------------------
-# temp <- read_tsv(here("data/eurostat_data/estat_proj_23np.tsv.gz"),
-#                  locale = locale(encoding = "UTF-8",
-#                                  decimal_mark = ",",
-#                                  grouping_mark = "."))
-
-
-
 
