@@ -1,10 +1,6 @@
 ### UN - Demographics Trends and Immigration 
 
 # Libraries -----------------------------------------------------------------
-#install.packages("gridExtra")
-library(ggthemes)
-library(ggrepel)
-library(gridExtra)
 library(tidyverse)
 library(here)
 
@@ -13,8 +9,8 @@ here::i_am("code/2_1_UN_Estimates.R")
 
 
 # Asia -------------------------------------------------------------
-## Import All Asia ---------------------------------------------------------
-WPP24_asia_raw <- read_csv(here("data/UN_data/UN_WPP24_Asia.csv")) %>%
+## Import POP Asia ---------------------------------------------------------
+WPP24_asia_pop_raw <- read_csv(here("data/UN_data/UN_WPP24_Asia_Pop.csv")) %>%
   select(Location,
          Iso3,
          Time,
@@ -25,12 +21,193 @@ WPP24_asia_raw <- read_csv(here("data/UN_data/UN_WPP24_Asia.csv")) %>%
          Projection = "Variant")
 
 
-## All Asia Graphs -----------------------------------------
+## Import MIG Asia ---------------------------------------
+# THIS IS NOT NET POPULATION
+# ONLY NET MIGRATION LEVELS OF EACH YEAR
+WPP24_asia_mig_raw <- read_csv(here("data/UN_data/UN_WPP24_Asia_Migration.csv")) %>%
+  select(Location,
+         Iso3,
+         Time,
+         Variant,
+         Value) %>%
+  rename(CountryCode = "Iso3",
+         year = "Time",
+         Projection = "Variant") 
+
+WPP24_asia_mig <- WPP24_asia_mig_raw %>%
+  mutate(Projection = recode(Projection,
+                             '95% lower bound' = "LowMigrationNet",
+                             'Median' = "MedianMigrationNet",
+                             '95% upper bound' = "HighMigrationNet"))
+
+
+## Calculating low and high scenarios ------------------------------
+WPP24_asia_pop_and_mig <- WPP24_asia_mig %>%
+  pivot_wider(names_from = Projection, 
+              values_from = Value) %>%
+  right_join(WPP24_asia_pop_raw %>%
+               filter(Projection == "Zero-migration") %>%
+               select(-Location) %>%
+               rename(population_zeromig = "Value",
+                      population_projection = "Projection"),
+             by = c("CountryCode", "year"))
+
+### JAPAN --------------------------------------------------------
+WPP24_JPN_pop_and_mig_calculated <- WPP24_asia_pop_and_mig %>%
+  filter(CountryCode == "JPN") %>%
+  ungroup() %>%
+  mutate(cumulative_medianmigration = cumsum(MedianMigrationNet),
+         cumulative_highmigration = cumsum(HighMigrationNet),
+         cumulative_lowmigration = cumsum(LowMigrationNet)) %>%
+  mutate(pop_proj_highmig = population_zeromig + cumulative_highmigration,
+         pop_proj_medianmig = population_zeromig + cumulative_medianmigration,
+         pop_proj_lowmig = population_zeromig + cumulative_lowmigration)
+
+WPP24_JPN_pop_and_mig_calculated_long <- WPP24_JPN_pop_and_mig_calculated %>%
+  select(year,
+         CountryCode,
+         pop_proj_highmig,
+         pop_proj_medianmig,
+         pop_proj_lowmig,
+         population_zeromig) %>%
+  pivot_longer(cols = -c(year,
+                         CountryCode),
+               names_to = "Projection",
+               values_to = "Value") 
+
+
+WPP24_JPN_graphable <- WPP24_JPN_pop_and_mig_calculated_long %>%
+  rbind(WPP24_asia_pop_raw %>% 
+          filter(CountryCode == "JPN") %>%
+          filter(Projection == "Median") %>%
+          select(year,
+                 CountryCode,
+                 Projection,
+                 Value)) %>%
+  mutate(Projection = recode(Projection,
+                             "population_zeromig" = "Zero-migration",
+                             "pop_proj_lowmig" = "Low-migration",
+                             "pop_proj_highmig" = "High-migration"))
+
+
+### CHINA --------------------------------------------------------
+WPP24_CHN_pop_and_mig_calculated <- WPP24_asia_pop_and_mig %>%
+  filter(CountryCode == "CHN") %>%
+  ungroup() %>%
+  mutate(cumulative_medianmigration = cumsum(MedianMigrationNet),
+         cumulative_highmigration = cumsum(HighMigrationNet),
+         cumulative_lowmigration = cumsum(LowMigrationNet)) %>%
+  mutate(pop_proj_highmig = population_zeromig + cumulative_highmigration,
+         pop_proj_medianmig = population_zeromig + cumulative_medianmigration,
+         pop_proj_lowmig = population_zeromig + cumulative_lowmigration)
+
+WPP24_CHN_pop_and_mig_calculated_long <- WPP24_CHN_pop_and_mig_calculated %>%
+  select(year,
+         CountryCode,
+         pop_proj_highmig,
+         pop_proj_medianmig,
+         pop_proj_lowmig,
+         population_zeromig) %>%
+  pivot_longer(cols = -c(year,
+                         CountryCode),
+               names_to = "Projection",
+               values_to = "Value") 
+
+
+WPP24_CHN_graphable <- WPP24_CHN_pop_and_mig_calculated_long %>%
+  rbind(WPP24_asia_pop_raw %>% 
+          filter(CountryCode == "CHN") %>%
+          filter(Projection == "Median") %>%
+          select(year,
+                 CountryCode,
+                 Projection,
+                 Value)) %>%
+  mutate(Projection = recode(Projection,
+                             "population_zeromig" = "Zero-migration",
+                             "pop_proj_lowmig" = "Low-migration",
+                             "pop_proj_highmig" = "High-migration"))
+
+### INDIA --------------------------------------------------------
+WPP24_IND_pop_and_mig_calculated <- WPP24_asia_pop_and_mig %>%
+  filter(CountryCode == "IND") %>%
+  ungroup() %>%
+  mutate(cumulative_medianmigration = cumsum(MedianMigrationNet),
+         cumulative_highmigration = cumsum(HighMigrationNet),
+         cumulative_lowmigration = cumsum(LowMigrationNet)) %>%
+  mutate(pop_proj_highmig = population_zeromig + cumulative_highmigration,
+         pop_proj_medianmig = population_zeromig + cumulative_medianmigration,
+         pop_proj_lowmig = population_zeromig + cumulative_lowmigration)
+
+WPP24_IND_pop_and_mig_calculated_long <- WPP24_IND_pop_and_mig_calculated %>%
+  select(year,
+         CountryCode,
+         pop_proj_highmig,
+         pop_proj_medianmig,
+         pop_proj_lowmig,
+         population_zeromig) %>%
+  pivot_longer(cols = -c(year,
+                         CountryCode),
+               names_to = "Projection",
+               values_to = "Value") 
+
+
+WPP24_IND_graphable <- WPP24_IND_pop_and_mig_calculated_long %>%
+  rbind(WPP24_asia_pop_raw %>% 
+          filter(CountryCode == "IND") %>%
+          filter(Projection == "Median") %>%
+          select(year,
+                 CountryCode,
+                 Projection,
+                 Value)) %>%
+  mutate(Projection = recode(Projection,
+                             "population_zeromig" = "Zero-migration",
+                             "pop_proj_lowmig" = "Low-migration",
+                             "pop_proj_highmig" = "High-migration"))
+
+
+
+
+## GRAPHING ASIA LOW AND HIGH MIG ----------------------------------
+# countrycode_to_graph <- "JPN"
+# WPP24_JPN_graphable %>%
+  
+# countrycode_to_graph <- "CHN"
+# WPP24_CHN_graphable %>%
+  
+countrycode_to_graph <- "IND"
+WPP24_IND_graphable %>%
+
+  filter(Projection != "pop_proj_medianmig") %>%
+  ggplot(aes(x = year, y = Value, color = Projection))+
+  geom_line(linetype = 1, linewidth = 0.5) +
+  labs(
+    title = paste0("Population Projection - ",countrycode_to_graph),
+    subtitle = "UN Low and High Migration Scenarios, UN Median Scenario",
+    x = "Year",
+    y = "Population") +
+  scale_color_manual(values = c(
+    "Median" = "#1b9e77",
+    #"pop_proj_medianmig" = "purple",
+    "Zero-migration"      = "black",
+    "High-migration"      = "darkred",
+    "Low-migration" = "orange")) +
+  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
+  theme(panel.background = element_rect(fill = 'white', color = 'white'), 
+        panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid'),
+        panel.grid.minor = element_line(color = '#EBEBEB', linewidth = 0.5),
+        text = element_text(family="Times New Roman"))
+
+ggsave(here(paste0("outputs/2_1_new_UN_populationwmigration_",
+                   countrycode_to_graph,
+                   ".png")))
+
+
+### OLD Asia pop Graphs -----------------------------------------
 
 # set variable to one of: "China", "India", "Japan"
 country_to_graph <- "Japan"
 
-WPP24_asia_raw %>%
+WPP24_asia_pop_raw %>%
   filter(Location == country_to_graph) %>%
   ggplot(aes(x = year, y = Value, color = Projection))+
     geom_line(linetype = 1, linewidth = 0.5) +
