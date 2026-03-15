@@ -4,8 +4,17 @@ library(here)
 
 here::i_am("code/2_3_stabilizing_EURO_revisited.R")
 
+# NEW STUFF - UN NATALITY AND MORTALITY RATES ---------------------------------
 
-
+WPP24_EU27_nat_raw <- read_csv(here("data/UN_data/UN_WPP24_EU27_Natality.csv")) %>%
+  rename(CountryCode = "Iso3",
+         year = "Time",
+         Projection = "Variant") 
+WPP24_EU27_mort_raw <- read_csv(here("data/UN_data/UN_WPP24_EU27_Natality.csv")) %>%
+  rename(CountryCode = "Iso3",
+         year = "Time",
+         Projection = "Variant") 
+  
 
 # DETOUR - EUROSTATPROJECTIONSEXIST -----------------------------------------------
 # projections available to us are:

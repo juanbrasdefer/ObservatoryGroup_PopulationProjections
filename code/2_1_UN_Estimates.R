@@ -25,11 +25,11 @@ WPP24_asia_pop_raw <- read_csv(here("data/UN_data/UN_WPP24_Asia_Pop.csv")) %>%
 # THIS IS NOT NET POPULATION
 # ONLY NET MIGRATION LEVELS OF EACH YEAR
 WPP24_asia_mig_raw <- read_csv(here("data/UN_data/UN_WPP24_Asia_Migration.csv")) %>%
-  select(Location,
-         Iso3,
-         Time,
-         Variant,
-         Value) %>%
+  # select(Location,
+  #        Iso3,
+  #        Time,
+  #        Variant,
+  #        Value) %>%
   rename(CountryCode = "Iso3",
          year = "Time",
          Projection = "Variant") 
@@ -40,6 +40,39 @@ WPP24_asia_mig <- WPP24_asia_mig_raw %>%
                              'Median' = "MedianMigrationNet",
                              '95% upper bound' = "HighMigrationNet"))
 
+#
+## Import MORT Asia ---------------------------------------
+# THE BELOW CALC ATTEMPTS WERE WRONG BECAUSE
+# TAKING ONLY AVERAGE MORTALITY INSIDE THE WORKING POP
+# WHICH IS MIGRANTS ONLY TELLS US HOW MANY MIGRANTS WONT MAKE IT TO NEXT YEAR
+# BUT IT EXCLUDES THE FACT THAT THEY WILL ALL DIE WHEN THEY GET TO LIKE 80
+# SO THE FIRST LIKE 20 YEARS OF YOUR PROJ WOULD BE FINE
+# BUT BY 2100 YOU HAVE PEOPLE LIVING TO LIKE 130YRS OLD
+# SO
+# IDK HOW YOU WANT TO HANDLE IT
+# BUT
+WPP24_asia_mort_raw <- read_csv(here("data/UN_data/UN_WPP24_Asia_Mortality.csv")) %>%
+  # select(Location,
+  #        Iso3,
+  #        Time,
+  #        Variant,
+  #        Value) %>%
+  rename(CountryCode = "Iso3",
+         year = "Time",
+         Projection = "Variant") 
+
+# WPP24_asia_mort_migrants <- WPP24_asia_mort_raw %>%
+#   rename(mortality_rate = "Value") %>%
+#   filter(Age > 17) %>%
+#   filter(Age < 65 ) %>%
+#   group_by(CountryCode,
+#            year) %>%
+#   summarise(migrant_age_mortality_rate = mean(mortality_rate))
+#   #mutate(migrant_age_mortality_rate = mean(mortality_rate)) %>%
+#   ungroup()
+
+
+
 
 ## Calculating low and high scenarios ------------------------------
 WPP24_asia_pop_and_mig <- WPP24_asia_mig %>%
@@ -48,7 +81,7 @@ WPP24_asia_pop_and_mig <- WPP24_asia_mig %>%
   right_join(WPP24_asia_pop_raw %>%
                filter(Projection == "Zero-migration") %>%
                select(-Location) %>%
-               rename(population_zeromig = "Value",
+               rename(population_medproj = "Value",
                       population_projection = "Projection"),
              by = c("CountryCode", "year"))
 
@@ -56,12 +89,15 @@ WPP24_asia_pop_and_mig <- WPP24_asia_mig %>%
 WPP24_JPN_pop_and_mig_calculated <- WPP24_asia_pop_and_mig %>%
   filter(CountryCode == "JPN") %>%
   ungroup() %>%
+  filter(year >= 2024) %>%
+  mutate(HighMigrationAdj = HighMigrationNet - MedianMigrationNet,
+         LowMigrationAdj = LowMigrationNet - MedianMigrationNet) %>%
   mutate(cumulative_medianmigration = cumsum(MedianMigrationNet),
-         cumulative_highmigration = cumsum(HighMigrationNet),
-         cumulative_lowmigration = cumsum(LowMigrationNet)) %>%
-  mutate(pop_proj_highmig = population_zeromig + cumulative_highmigration,
-         pop_proj_medianmig = population_zeromig + cumulative_medianmigration,
-         pop_proj_lowmig = population_zeromig + cumulative_lowmigration)
+         cumulative_highmigration = cumsum(HighMigrationAdj),
+         cumulative_lowmigration = cumsum(LowMigrationAdj)) %>%
+  mutate(pop_proj_highmig = population_medproj + cumulative_highmigration,
+         pop_proj_medianmig = population_medproj + cumulative_medianmigration,
+         pop_proj_lowmig = population_medproj + cumulative_lowmigration)
 
 WPP24_JPN_pop_and_mig_calculated_long <- WPP24_JPN_pop_and_mig_calculated %>%
   select(year,
@@ -69,7 +105,7 @@ WPP24_JPN_pop_and_mig_calculated_long <- WPP24_JPN_pop_and_mig_calculated %>%
          pop_proj_highmig,
          pop_proj_medianmig,
          pop_proj_lowmig,
-         population_zeromig) %>%
+         population_medproj) %>%
   pivot_longer(cols = -c(year,
                          CountryCode),
                names_to = "Projection",
@@ -77,15 +113,17 @@ WPP24_JPN_pop_and_mig_calculated_long <- WPP24_JPN_pop_and_mig_calculated %>%
 
 
 WPP24_JPN_graphable <- WPP24_JPN_pop_and_mig_calculated_long %>%
-  rbind(WPP24_asia_pop_raw %>% 
+  filter(Projection != "population_medproj") %>%
+  rbind(WPP24_asia_pop_raw %>%
           filter(CountryCode == "JPN") %>%
-          filter(Projection == "Median") %>%
+          filter(Projection %in% c( "Zero-migration",
+                                    "Median")) %>%
           select(year,
                  CountryCode,
                  Projection,
                  Value)) %>%
   mutate(Projection = recode(Projection,
-                             "population_zeromig" = "Zero-migration",
+                             "population_medproj" = "Median",
                              "pop_proj_lowmig" = "Low-migration",
                              "pop_proj_highmig" = "High-migration"))
 
@@ -94,12 +132,16 @@ WPP24_JPN_graphable <- WPP24_JPN_pop_and_mig_calculated_long %>%
 WPP24_CHN_pop_and_mig_calculated <- WPP24_asia_pop_and_mig %>%
   filter(CountryCode == "CHN") %>%
   ungroup() %>%
+  ungroup() %>%
+  filter(year >= 2024) %>%
+  mutate(HighMigrationAdj = HighMigrationNet - MedianMigrationNet,
+         LowMigrationAdj = LowMigrationNet - MedianMigrationNet) %>%
   mutate(cumulative_medianmigration = cumsum(MedianMigrationNet),
-         cumulative_highmigration = cumsum(HighMigrationNet),
-         cumulative_lowmigration = cumsum(LowMigrationNet)) %>%
-  mutate(pop_proj_highmig = population_zeromig + cumulative_highmigration,
-         pop_proj_medianmig = population_zeromig + cumulative_medianmigration,
-         pop_proj_lowmig = population_zeromig + cumulative_lowmigration)
+         cumulative_highmigration = cumsum(HighMigrationAdj),
+         cumulative_lowmigration = cumsum(LowMigrationAdj)) %>%
+  mutate(pop_proj_highmig = population_medproj + cumulative_highmigration,
+         pop_proj_medianmig = population_medproj + cumulative_medianmigration,
+         pop_proj_lowmig = population_medproj + cumulative_lowmigration)
 
 WPP24_CHN_pop_and_mig_calculated_long <- WPP24_CHN_pop_and_mig_calculated %>%
   select(year,
@@ -107,7 +149,7 @@ WPP24_CHN_pop_and_mig_calculated_long <- WPP24_CHN_pop_and_mig_calculated %>%
          pop_proj_highmig,
          pop_proj_medianmig,
          pop_proj_lowmig,
-         population_zeromig) %>%
+         population_medproj) %>%
   pivot_longer(cols = -c(year,
                          CountryCode),
                names_to = "Projection",
@@ -115,15 +157,17 @@ WPP24_CHN_pop_and_mig_calculated_long <- WPP24_CHN_pop_and_mig_calculated %>%
 
 
 WPP24_CHN_graphable <- WPP24_CHN_pop_and_mig_calculated_long %>%
-  rbind(WPP24_asia_pop_raw %>% 
+  filter(Projection != "population_medproj") %>%
+  rbind(WPP24_asia_pop_raw %>%
           filter(CountryCode == "CHN") %>%
-          filter(Projection == "Median") %>%
+          filter(Projection %in% c( "Zero-migration",
+                                    "Median")) %>%
           select(year,
                  CountryCode,
                  Projection,
                  Value)) %>%
   mutate(Projection = recode(Projection,
-                             "population_zeromig" = "Zero-migration",
+                             "population_medproj" = "Median",
                              "pop_proj_lowmig" = "Low-migration",
                              "pop_proj_highmig" = "High-migration"))
 
@@ -131,12 +175,16 @@ WPP24_CHN_graphable <- WPP24_CHN_pop_and_mig_calculated_long %>%
 WPP24_IND_pop_and_mig_calculated <- WPP24_asia_pop_and_mig %>%
   filter(CountryCode == "IND") %>%
   ungroup() %>%
+  ungroup() %>%
+  filter(year >= 2024) %>%
+  mutate(HighMigrationAdj = HighMigrationNet - MedianMigrationNet,
+         LowMigrationAdj = LowMigrationNet - MedianMigrationNet) %>%
   mutate(cumulative_medianmigration = cumsum(MedianMigrationNet),
-         cumulative_highmigration = cumsum(HighMigrationNet),
-         cumulative_lowmigration = cumsum(LowMigrationNet)) %>%
-  mutate(pop_proj_highmig = population_zeromig + cumulative_highmigration,
-         pop_proj_medianmig = population_zeromig + cumulative_medianmigration,
-         pop_proj_lowmig = population_zeromig + cumulative_lowmigration)
+         cumulative_highmigration = cumsum(HighMigrationAdj),
+         cumulative_lowmigration = cumsum(LowMigrationAdj)) %>%
+  mutate(pop_proj_highmig = population_medproj + cumulative_highmigration,
+         pop_proj_medianmig = population_medproj + cumulative_medianmigration,
+         pop_proj_lowmig = population_medproj + cumulative_lowmigration)
 
 WPP24_IND_pop_and_mig_calculated_long <- WPP24_IND_pop_and_mig_calculated %>%
   select(year,
@@ -144,7 +192,7 @@ WPP24_IND_pop_and_mig_calculated_long <- WPP24_IND_pop_and_mig_calculated %>%
          pop_proj_highmig,
          pop_proj_medianmig,
          pop_proj_lowmig,
-         population_zeromig) %>%
+         population_medproj) %>%
   pivot_longer(cols = -c(year,
                          CountryCode),
                names_to = "Projection",
@@ -152,15 +200,17 @@ WPP24_IND_pop_and_mig_calculated_long <- WPP24_IND_pop_and_mig_calculated %>%
 
 
 WPP24_IND_graphable <- WPP24_IND_pop_and_mig_calculated_long %>%
-  rbind(WPP24_asia_pop_raw %>% 
+  filter(Projection != "population_medproj") %>%
+  rbind(WPP24_asia_pop_raw %>%
           filter(CountryCode == "IND") %>%
-          filter(Projection == "Median") %>%
+          filter(Projection %in% c( "Zero-migration",
+                                    "Median")) %>%
           select(year,
                  CountryCode,
                  Projection,
                  Value)) %>%
   mutate(Projection = recode(Projection,
-                             "population_zeromig" = "Zero-migration",
+                             "population_medproj" = "Median",
                              "pop_proj_lowmig" = "Low-migration",
                              "pop_proj_highmig" = "High-migration"))
 
@@ -199,7 +249,7 @@ WPP24_IND_graphable %>%
 
 ggsave(here(paste0("outputs/2_1_new_UN_populationwmigration_",
                    countrycode_to_graph,
-                   ".png")))
+                   "med.png")))
 
 
 ### OLD Asia pop Graphs -----------------------------------------
@@ -328,11 +378,11 @@ ggsave(here(paste0("outputs/2_1_UN_WPP24&LowHighMig_UnitedStates.png")))
 # Europe -------------------------------------------------------------
 ## UN EU27 pop data ---------------------------------------
 WPP24_eur_pop_raw <- read_csv(here("data/UN_data/UN_WPP24_Eur27_Pop.csv")) %>%
-  select(Location,
-         Iso3,
-         Time,
-         Variant,
-         Value) %>%
+  # select(Location,
+  #        Iso3,
+  #        Time,
+  #        Variant,
+  #        Value) %>%
   rename(CountryCode = "Iso3",
          year = "Time",
          Projection = "Variant") 
@@ -342,6 +392,7 @@ WPP24_eur_pop_eu27 <- WPP24_eur_pop_raw %>%
   summarise(Value = sum(Value)) %>%
   mutate(CountryCode = "EU27",
          Location = "European Union (27)")
+
 
 
 un_wpp24_erroneous_eur_24val <- WPP24_eur_pop_eu27 %>%
@@ -354,11 +405,11 @@ un_wpp24_erroneous_eur_24val <- WPP24_eur_pop_eu27 %>%
 # THIS IS NOT NET POPULATION
 # ONLY NET MIGRATION LEVELS OF EACH YEAR
 WPP24_eur_mig_raw <- read_csv(here("data/UN_data/UN_WPP24_Eur27_Migration.csv")) %>%
-  select(Location,
-         Iso3,
-         Time,
-         Variant,
-         Value) %>%
+  # select(Location,
+  #        Iso3,
+  #        Time,
+  #        Variant,
+  #        Value) %>%
   rename(CountryCode = "Iso3",
          year = "Time",
          Projection = "Variant") 
@@ -383,39 +434,43 @@ WPP24_eur_mig_eu27 %>%
     subtitle = "Median, HighMigration, LowMigration, per year",
     x = "Year",
     y = "Population") +
-  # scale_color_manual(values = c(
-  #   "BSL" = "#1b9e77",
-  #   "NMIGR"      = "black",
-  #   "HMIGR"      = "darkred",
-  #   "LMIGR" = "orange")) +
+   scale_color_manual(values = c(
+     "MedianMigrationNet" = "#1b9e77",
+     #"NMIGR"      = "black",
+     "HighMigrationNet"      = "darkred",
+     "LowMigrationNet" = "orange")) +
   scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +
   theme(panel.background = element_rect(fill = 'white', color = 'white'), 
         panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid'),
         panel.grid.minor = element_line(color = '#EBEBEB', linewidth = 0.5),
         text = element_text(family="Times New Roman"))
 
-ggsave(here(paste0("outputs/2_1_new_UN_migrationlevels_EU27.png")))
+ggsave(here(paste0("outputs/2_1_new_UN_migrationlevels_EU27c.png")))
 
 ## Calculating low and high scenarios ------------------------------
 WPP24_eur_pop_and_mig_eu27 <- WPP24_eur_mig_eu27 %>%
   pivot_wider(names_from = Projection, 
               values_from = Value) %>%
   right_join(WPP24_eur_pop_eu27 %>%
-               filter(Projection == "Zero-migration") %>%
+               #filter(Projection == "Zero-migration") %>%
+               filter(Projection == "Median") %>%
                select(-CountryCode,
                       -Location) %>%
-               rename(population_zeromig = "Value",
+               rename(population_medproj = "Value",
                       population_projection = "Projection"),
              by = "year")
 
 WPP24_eur_pop_and_mig_eu27_calculated <- WPP24_eur_pop_and_mig_eu27 %>%
   ungroup() %>%
+  filter(year >= 2024) %>%
+  mutate(HighMigrationAdj = HighMigrationNet - MedianMigrationNet,
+         LowMigrationAdj = LowMigrationNet - MedianMigrationNet) %>%
   mutate(cumulative_medianmigration = cumsum(MedianMigrationNet),
-         cumulative_highmigration = cumsum(HighMigrationNet),
-         cumulative_lowmigration = cumsum(LowMigrationNet)) %>%
-  mutate(pop_proj_highmig = population_zeromig + cumulative_highmigration,
-         pop_proj_medianmig = population_zeromig + cumulative_medianmigration,
-         pop_proj_lowmig = population_zeromig + cumulative_lowmigration)
+         cumulative_highmigration = cumsum(HighMigrationAdj),
+         cumulative_lowmigration = cumsum(LowMigrationAdj)) %>%
+  mutate(pop_proj_highmig = population_medproj + cumulative_highmigration,
+         pop_proj_medianmig = population_medproj + cumulative_medianmigration,
+         pop_proj_lowmig = population_medproj + cumulative_lowmigration)
 
 WPP24_eur_pop_and_mig_eu27_calculated_long <- WPP24_eur_pop_and_mig_eu27_calculated %>%
   select(year,
@@ -423,7 +478,7 @@ WPP24_eur_pop_and_mig_eu27_calculated_long <- WPP24_eur_pop_and_mig_eu27_calcula
          pop_proj_highmig,
          pop_proj_medianmig,
          pop_proj_lowmig,
-         population_zeromig) %>%
+         population_medproj) %>%
   pivot_longer(cols = -c(year,
                          CountryCode),
                names_to = "Projection",
@@ -431,14 +486,16 @@ WPP24_eur_pop_and_mig_eu27_calculated_long <- WPP24_eur_pop_and_mig_eu27_calcula
 
 
 WPP24_eur27_graphable <- WPP24_eur_pop_and_mig_eu27_calculated_long %>%
+  filter(Projection != "population_medproj") %>%
   rbind(WPP24_eur_pop_eu27 %>%
-          filter(Projection == "Median") %>%
+          filter(Projection %in% c( "Zero-migration",
+                                    "Median")) %>%
           select(year,
                  CountryCode,
                  Projection,
                  Value)) %>%
   mutate(Projection = recode(Projection,
-                             "population_zeromig" = "Zero-migration",
+                             "population_medproj" = "Median",
                              "pop_proj_lowmig" = "Low-migration",
                              "pop_proj_highmig" = "High-migration"))
 
@@ -464,7 +521,7 @@ WPP24_eur27_graphable %>%
         panel.grid.minor = element_line(color = '#EBEBEB', linewidth = 0.5),
         text = element_text(family="Times New Roman"))
 
-ggsave(here(paste0("outputs/2_1_new_UN_populationwmigration_EU27.png")))
+ggsave(here(paste0("outputs/2_1_new_UN_populationwmigration_EU27_medianbased.png")))
 # RETURN TO HERE ----------------------------------------
 # RETURN TO HERE ----------------------------------------
 # RETURN TO HERE ----------------------------------------
