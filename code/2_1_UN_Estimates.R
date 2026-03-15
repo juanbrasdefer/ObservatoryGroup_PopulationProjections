@@ -295,8 +295,11 @@ WPP24_US_raw <- read_csv(here("data/UN_data/UN_WPP24_US.csv")) %>%
          Projection = "Variant")
 
 ## Import US Migration Census numbers ----------------------------
-uscensus_netmig_long <- read_csv(here("data/US_Census/NST-EST2025-ALLDATA.csv")) %>%
-  filter(NAME == "United States") %>% # total country, not by state
+# THESE ARE IN LINE WITH THE CENSUS REVISIONS
+uscensus_totals_raw <- read_csv(here("data/US_Census/NST-EST2025-ALLDATA.csv")) %>%
+  filter(NAME == "United States") # total country, not by state
+  
+uscensus_netmig_long <- uscensus_totals_raw %>%
   select(NAME,
          NETMIG2020,
          NETMIG2021,
@@ -317,8 +320,6 @@ us_netmig_24 <- uscensus_netmig_long %>%
 us_netmig_25 <- uscensus_netmig_long %>%
   filter(time_period == "NETMIG2025") %>%
   pull(net_migration)
-
-
 
 ## Calculating low and high scenarios ------------------------------
 US_high <- WPP24_US_raw %>%
@@ -345,7 +346,7 @@ WPP24_US_scenarios <- WPP24_US_raw %>%
   rbind(US_high) %>%
   rbind(US_low)
 
-## US Graph -----------------------------------------
+### US Migration scenarios Graph -----------------------------------------
 
 WPP24_US_scenarios %>%
   filter(!(Projection %in% c("95% upper bound",
@@ -371,6 +372,55 @@ WPP24_US_scenarios %>%
 
 ggsave(here(paste0("outputs/2_1_UN_WPP24&LowHighMig_UnitedStates.png")))
 
+
+## quick comparison of world bank and us census GROWTH numbers ----------
+uscensus_pop_long <- uscensus_totals_raw %>%
+  select(NAME,
+         POPESTIMATE2020,
+         POPESTIMATE2021,
+         POPESTIMATE2022,
+         POPESTIMATE2023,
+         POPESTIMATE2024,
+         POPESTIMATE2025) %>%
+  pivot_longer(-NAME,
+               names_to = "time_period",
+               values_to = "census_population")
+
+uscensus_pop_2020 <- uscensus_pop_long %>%
+  filter(time_period == "POPESTIMATE2020") %>%
+  pull(census_population)
+
+uscensus_pop_2021 <- uscensus_pop_long %>%
+  filter(time_period == "POPESTIMATE2021") %>%
+  pull(census_population)
+
+uscensus_pop_2022 <- uscensus_pop_long %>%
+  filter(time_period == "POPESTIMATE2022") %>%
+  pull(census_population)
+
+uscensus_pop_2023 <- uscensus_pop_long %>%
+  filter(time_period == "POPESTIMATE2023") %>%
+  pull(census_population)
+
+uscensus_pop_2024 <- uscensus_pop_long %>%
+  filter(time_period == "POPESTIMATE2024") %>%
+  pull(census_population)
+
+uscensus_popgrowth_21 <- 100*(uscensus_pop_2021 - uscensus_pop_2020)/uscensus_pop_2020
+uscensus_popgrowth_22 <- 100*(uscensus_pop_2022 - uscensus_pop_2021)/uscensus_pop_2021
+uscensus_popgrowth_23 <- 100*(uscensus_pop_2023 - uscensus_pop_2022)/uscensus_pop_2022
+uscensus_popgrowth_24 <- 100*(uscensus_pop_2024 - uscensus_pop_2023)/uscensus_pop_2023
+
+census_calc_growths <- as.list(c(uscensus_popgrowth_21,
+                                 uscensus_popgrowth_22,
+                                 uscensus_popgrowth_23,
+                                 uscensus_popgrowth_24))
+
+wb_pop_us_validation_calcs <- wb_pop_growth_comparison %>%
+  filter(CountryCode == "USA") %>%
+  filter(year > 2020)
+
+wb_pop_us_validation_calcs$census_growths_calculated <- census_calc_growths
 
 
 # WPP ALL, new ---------------------------------------------

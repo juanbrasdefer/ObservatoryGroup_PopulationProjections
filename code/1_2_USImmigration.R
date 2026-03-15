@@ -47,34 +47,59 @@ us_census_adjustment_bound <- rbind(us_workingage, us_workingage_adjusted)
 
 
 # US 'Encounters' Data ----------------------------------------------------------
-us_encounters <- read_csv(here("data/US_CBP_data/nationwide-encounters-fy22-fy25-state.csv"))
-us_encounters <- us_encounters %>%
+CBP_encounters_raw <- read_csv(here("data/US_CBP_data/nationwide-encounters-fy22-fy25-state.csv")) %>%
   rename(encounter_count = "Encounter Count",
          fiscal_year = "Fiscal Year")
 
 # achieves save result as group_by(fiscal_year) and sum
-us_encounters1 <- aggregate(encounter_count ~ fiscal_year, 
-                            data = us_encounters, 
-                            FUN = sum)
+CBP_encounters_total <- CBP_encounters_raw %>%
+  group_by(fiscal_year) %>%
+  summarise(total_encounters = sum(encounter_count)) %>%
+  mutate(theoretical_total_attempts_70 = total_encounters / 0.7) %>%
+  mutate(theoretical_successful_crossings_70 = theoretical_total_attempts_70 - total_encounters)
+
+CBP_encounters_total_long <- CBP_encounters_total %>%
+  pivot_longer(cols = -fiscal_year,
+               names_to = "Measure",
+               values_to = "count") %>%
+  mutate(Measure = recode(Measure,
+                          "total_encounters" = "Observed Border Apprehensions",
+                          "theoretical_total_attempts_70" = "Estimated Total Attempts",
+                          "theoretical_successful_crossings_70"= "Estimated Successful Crossings"))
 
 
 
-
-# Graphing ---------------------------------------------------------------------
-
-encountersplot <- ggplot(us_encounters, aes(x = fiscal_year, y = encounter_count)) +
-  geom_col() +
-  geom_text(aes(label = format(encounter_count, big.mark = ",")), vjust = -0.5, size = 4) +
+# Graphing Encounters ---------------------------------------------------------------------
+CBP_encounters_total_long %>%
+  filter(Measure != "Estimated Total Attempts") %>%
+  ggplot(aes(x = fiscal_year, y = count, 
+             fill = Measure, color = Measure)) +
+  geom_bar(position="stack", 
+           stat="identity", # stacked on top of each other
+           width=0.5) + 
+  #geom_bar(position="dodge", stat="identity") + # for side-by-side bars
+  #geom_text(aes(label = format(count, big.mark = ",")), vjust = -0.5, size = 4) +
   labs(
     title = "US Border Encounters by Fiscal Year",
     x = "Fiscal Year",
-    y = "Total Encounters"
+    y = "Number of Crossings"
   ) +
-  scale_y_continuous(labels = scales::comma, expand = expansion(mult = c(0, 0.1))) +
-  theme_minimal()
+  scale_fill_manual(values = c(
+    "Observed Border Apprehensions" = "#1b9e77",
+    "Estimated Successful Crossings"= "white")) +
+  scale_color_manual(values = c(
+    "Observed Border Apprehensions" = "#1b9e77",
+    "Estimated Successful Crossings" = "grey")) +
+  scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) +  
+  theme(panel.background = element_rect(fill = 'white', color = 'white'), 
+        panel.grid.major = element_line(color = '#EBEBEB', linetype = 'solid'),
+        panel.grid.minor = element_line(color = '#EBEBEB', linewidth = 0.5),
+        text = element_text(family="Times New Roman"),
+        legend.position = "bottom")
 
-
-
+ggsave(here(paste0("outputs/1_2_border_encounters.png")),
+       width = 7,height = 5,
+       units = "in", dpi = 300)
 
 # US CENSUS ----------------------------------------------------------------------
 uscensusprojection <- ggplot(us_census_adjustment, aes(x = year, y = Value, color = Projection)) +
