@@ -2,20 +2,21 @@
 library(tidyverse)
 library(here)
 
-here::i_am("code/2_3_2_stabilizing_fr.R")
+here::i_am("code/2_3_2_stabilizing_eu.R")
 
 source(here("code/2_3_stabilizing_work_pop.R"))
 
-country_to_model <- "EU"
-country_to_model_str <- "FR"
+country_to_model <- "EU27_2020"
+country_to_model_str <- "EU27"
 
-birth_rate_fr <- 0.012   # example: 12 births per 1000 population
-# rate of 1.2%
+birth_rate_eu <- 0.0885   # example: 8.85 births per 1000 population
+
 
 
 # selecting country from Eurostat pop data ----------------------------------------------------------------
-advanceable_b_fr <- eurostat_ages_clean %>%
-  filter(year >= 2000,
+advanceable_b_eu <- eurostat_ages_clean %>%
+  filter(year > 2000,
+         year < 2025,
          gender == "T",
          Location == country_to_model,
          !(age_bracket %in% c("Y_OPEN",
@@ -24,13 +25,13 @@ advanceable_b_fr <- eurostat_ages_clean %>%
                               "Y_LT1"))) %>% 
   mutate(age_numeric = as.integer(str_extract(age_bracket, "\\d+")))
 
-## histogram - current FR age distribution -----------------------------------------
-advanceable_b_fr %>%
-  filter(year == 2025) %>%
+## histogram - current EU age distribution -----------------------------------------
+advanceable_b_eu %>%
+  filter(year == 2024) %>%
   ggplot(aes(x = age_numeric, y = Value)) +
   geom_col(fill = "darkblue", color = "transparent") +
   labs(
-    title = paste0(country_to_model_str, " Population Distribution by Age (2025)"),
+    title = paste0(country_to_model_str, " Population Distribution by Age (2024)"),
     subtitle = "Eurostat",
     x = "Age",
     y = "Population"
@@ -38,41 +39,17 @@ advanceable_b_fr %>%
   scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) + # 1e6 means removing 6 zeros from scale
   theme(text = element_text(family="Times New Roman"))
 
-ggsave(here("outputs/2_3_fr_age_composition_2025.png"),
+ggsave(here("outputs/2_3_eu_age_composition_2025.png"),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
 
 
-
-## Function usage - Advancement Simple ----------------------------------------------------
-years_to_project <- 17
-start_year <- max(advanceable_b_fr$year)
-projection_closed_borders_fr <- advanceable_b_fr %>%
-  select(year, age_numeric, Value)
-
-for(i in 1:years_to_project){
-  new <- advance_year_simple(projection_closed_borders_fr, start_year + i - 1)
-  projection_closed_borders_fr <- bind_rows(projection_closed_borders_fr, new)
-}
-
-wpop_closedborders_fr <- projection_closed_borders_fr %>%
-  filter(age_numeric >= 18, 
-         age_numeric <= 64) %>%
-  group_by(year) %>%
-  summarise(work_pop = sum(Value), .groups="drop")
-
-# next: apply natality rates to project into 2100
-# then: apply annual mortality rates
-
-
-
-
 # Function usage - Advancement Natality ----------------------------------------------------
-advanceable_n_fr <- advanceable_b_fr # making copy of prev df
+advanceable_n_eu <- advanceable_b_eu # making copy of prev df
 years_to_project <- 75
-start_year <- max(advanceable_n_fr$year)
+start_year <- max(advanceable_n_eu$year)
 
-projection_closed_borders_fr <- advanceable_n_fr %>%
+projection_closed_borders_eu <- advanceable_n_eu %>%
   select(year, age_numeric, Value)
 
 for(i in 1:years_to_project){
@@ -80,13 +57,13 @@ for(i in 1:years_to_project){
   next_year <- start_year + i - 1
   
   new <- advance_year_natality(
-    projection_closed_borders_fr,
+    projection_closed_borders_eu,
     t = next_year,
-    birth_rate = birth_rate_fr
+    birth_rate = birth_rate_eu
   )
   
-  projection_closed_borders_fr <- bind_rows(
-    projection_closed_borders_fr,
+  projection_closed_borders_eu <- bind_rows(
+    projection_closed_borders_eu,
     new
   )
 }
@@ -96,13 +73,13 @@ for(i in 1:years_to_project){
 
 
 ## natality working pop histogram -----------------------------------------
-wpop_closedborders_fr <- projection_closed_borders_fr %>%
+wpop_closedborders_eu <- projection_closed_borders_eu %>%
   filter(age_numeric >= 18,
          age_numeric <= 64) %>%
   group_by(year) %>%
   summarise(work_pop = sum(Value), .groups="drop")
 
-wpop_closedborders_fr %>%
+wpop_closedborders_eu %>%
   ggplot(aes(x = year, y = work_pop)) +
   geom_line() +
   labs(
@@ -116,14 +93,14 @@ wpop_closedborders_fr %>%
   theme(text = element_text(family="Times New Roman"))
 
 
-ggsave(here("outputs/2_3_fr_wpop_closedborders_nat.png"),
+ggsave(here("outputs/2_3_eu_wpop_closedborders_nat.png"),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
 
 
 
 # mortality selecting FR -------------------------------------
-mortality_fr <- mortality_clean %>%
+mortality_eu <- mortality_clean %>%
   filter(year >= 2000,
          year <= 2023, # 2024 is all NA empties
          gender == "T",
@@ -134,14 +111,14 @@ mortality_fr <- mortality_clean %>%
                               "Y_LT1"))) %>% 
   mutate(age_numeric = as.integer(str_extract(age_bracket, "\\d+")))
 
-mortality_wpop_fr <- mortality_fr %>%
+mortality_wpop_eu <- mortality_eu %>%
   filter(age_numeric >= 18,
          age_numeric <= 64)
 
 
 
 ## histogram - FR WPop mortality by age 2023 -----------------------------------------
-mortality_wpop_fr %>%
+mortality_wpop_eu %>%
   filter(year == 2023) %>%
   ggplot(aes(x = age_numeric, y = Value)) +
   geom_col(fill = "navyblue") +
@@ -153,7 +130,7 @@ mortality_wpop_fr %>%
   scale_y_continuous(labels = function(x) paste0(x/1e3, "K")) + # 1e6 means removing 6 zeros from scale
   theme(text = element_text(family="Times New Roman"))
 
-ggsave(here("outputs/2_3_fr_mortality_composition_wpop_2023.png"),
+ggsave(here("outputs/2_3_eu_mortality_composition_wpop_2023.png"),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
 
@@ -165,20 +142,20 @@ ggsave(here("outputs/2_3_fr_mortality_composition_wpop_2023.png"),
 # we need to combine mortality counts with population counts
 
 # population in 2023
-calcs_pop_2023_fr <- advanceable_n_fr %>%
+calcs_pop_2023_eu <- advanceable_n_eu %>%
   filter(year == 2023) %>%
   select(age_numeric, 
          pop = Value) # renaming this column for later calc
 
 # deaths in 2023
-calcs_deaths_2023_fr <- mortality_fr %>%
+calcs_deaths_2023_eu <- mortality_eu %>%
   filter(year == 2023) %>%
   select(age_numeric, 
          deaths = Value) # renaming this column for later calc
 
 # mortality rate by age
-mortality_rates_2023_fr <- calcs_deaths_2023_fr %>%
-  left_join(calcs_pop_2023_fr, by = "age_numeric") %>%
+mortality_rates_2023_eu <- calcs_deaths_2023_eu %>%
+  left_join(calcs_pop_2023_eu, by = "age_numeric") %>%
   mutate(mortality_rate = deaths / pop) %>%
   select(age_numeric, mortality_rate)
 
@@ -187,9 +164,9 @@ mortality_rates_2023_fr <- calcs_deaths_2023_fr %>%
 
 ## usage mortality function ----------------------------------------
 years_to_project <- 75
-start_year <- max(advanceable_n_fr$year)
+start_year <- max(advanceable_n_eu$year)
 
-projection_mortality_fr <- advanceable_n_fr %>%
+projection_mortality_eu <- advanceable_n_eu %>%
   select(year, age_numeric, Value)
 
 
@@ -198,14 +175,14 @@ for(i in 1:years_to_project){
   next_year <- start_year + i - 1
   
   new <- advance_year_mortality(
-    projection_mortality_fr,
+    projection_mortality_eu,
     t = next_year,
-    birth_rate = birth_rate_fr,
-    mortality_table = mortality_rates_2023_fr
+    birth_rate = birth_rate_eu,
+    mortality_table = mortality_rates_2023_eu
   )
   
-  projection_mortality_fr <- bind_rows(
-    projection_mortality_fr,
+  projection_mortality_eu <- bind_rows(
+    projection_mortality_eu,
     new
   )
 }
@@ -213,7 +190,7 @@ for(i in 1:years_to_project){
 
 # wpop projection: all (cb, n, m) projection -----------------------------------------
 
-projection_mortality_fr %>%
+projection_mortality_eu %>%
   filter(age_numeric >= 18,
          age_numeric <= 64) %>%
   group_by(year) %>%
@@ -230,7 +207,7 @@ projection_mortality_fr %>%
   scale_y_continuous(labels = function(x) paste0(x/1e6, "M")) + # 1e6 means removing 6 zeros from scale
   theme(text = element_text(family="Times New Roman"))
 
-ggsave(here("outputs/2_3_fr_wpop_closedborders_mort.png"),
+ggsave(here("outputs/2_3_eu_wpop_closedborders_mort.png"),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
 
@@ -242,7 +219,7 @@ ggsave(here("outputs/2_3_fr_wpop_closedborders_mort.png"),
 
 # taking 2025 working pop and extending to 2100 
 # to graph it as our benchmark
-projection_wpop_gap_fr <- advanceable_n_fr %>%
+projection_wpop_gap_eu <- advanceable_n_eu %>%
   select(year, age_numeric, Value) %>%
   filter(year == 2025) %>%
   mutate(Projection = "WPop2025") %>%
@@ -251,15 +228,15 @@ projection_wpop_gap_fr <- advanceable_n_fr %>%
   group_by(year) %>%
   summarise(work_pop = sum(Value, na.rm = TRUE), .groups="drop") 
 
-projection_wpop_gap_fr <- tibble(
+projection_wpop_gap_eu <- tibble(
   year = 2025:2100,
-  work_pop = projection_wpop_gap_fr$work_pop,
+  work_pop = projection_wpop_gap_eu$work_pop,
   Projection = "WPop2025") %>%
   select(year, Projection, work_pop)
 
 
 # then massaging the no migration projection
-projection_wpop_cbnm_fr <- projection_mortality_fr %>%
+projection_wpop_cbnm_eu <- projection_mortality_eu %>%
   filter(age_numeric >= 18,
          age_numeric <= 64) %>%
   group_by(year) %>%
@@ -267,15 +244,15 @@ projection_wpop_cbnm_fr <- projection_mortality_fr %>%
   rename(NoMigration = "work_pop")
 
 # joining the current stock and no migration projections
-projection_wpop_integral_fr <- projection_wpop_cbnm_fr %>%
-  left_join(projection_wpop_gap_fr %>%
+projection_wpop_integral_eu <- projection_wpop_cbnm_eu %>%
+  left_join(projection_wpop_gap_eu %>%
               select(year, work_pop) %>%
               rename(WPop2025 = "work_pop"),
             by = "year") %>%
   filter(year >= 2025)
 
 # and finally creating a third series for the pre 2025 true numbers
-projection_wpop_observed_fr <- projection_wpop_cbnm_fr %>%
+projection_wpop_observed_eu <- projection_wpop_cbnm_eu %>%
   filter(year <= 2025) %>%
   rename(Observed = "NoMigration")
 
@@ -284,7 +261,7 @@ projection_wpop_observed_fr <- projection_wpop_cbnm_fr %>%
 ggplot() +
   # integral
   geom_ribbon(
-    data = projection_wpop_integral_fr,
+    data = projection_wpop_integral_eu,
     aes(x = year,
         ymin = pmin(NoMigration, WPop2025),
         ymax = pmax(NoMigration, WPop2025)),
@@ -293,7 +270,7 @@ ggplot() +
   
   # stock at 2025 wpop
   geom_line(
-    data = projection_wpop_gap_fr %>%
+    data = projection_wpop_gap_eu %>%
       filter(year>= 2025),
     aes(x = year, y = work_pop, color = "WPop2025"),
     linewidth = 0.6,
@@ -301,7 +278,7 @@ ggplot() +
   
   # nomigration
   geom_line(
-    data = projection_wpop_cbnm_fr %>%
+    data = projection_wpop_cbnm_eu %>%
       filter(year>= 2025),
     aes(x = year, y = NoMigration, color = "NoMigration"),
     linewidth = 0.6,
@@ -309,7 +286,7 @@ ggplot() +
   
   # true observed
   geom_line(
-    data = projection_wpop_observed_fr,
+    data = projection_wpop_observed_eu,
     aes(x = year, y = Observed, color = "Observed"),
     linewidth = 0.6) +
   
@@ -329,7 +306,7 @@ ggplot() +
   theme(text = element_text(family="Times New Roman"))
 
 
-ggsave(here("outputs/2_3_fr_wpop_integral_cbnm.png"),
+ggsave(here("outputs/2_3_eu_wpop_integral_cbnm.png"),
        width = 9,height = 5,   # 2:1 ratio
        units = "in", dpi = 300)
 

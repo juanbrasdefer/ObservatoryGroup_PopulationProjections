@@ -123,7 +123,7 @@ oecd_simplegdp %>%
   #geom_hline(yintercept = 0, linetype = "dashed") +
   labs(
     title = "US vs EU - GDP, Millions",
-    subtitle = "US dollars per hour, PPP converted",
+    subtitle = "US dollars, PPP Constant Prices",
     x = "Year",
     y = "GDP USD (M)"
   ) +

@@ -14,7 +14,20 @@ bea_contribution_long <- bea_contribution_pctchng_gdp_raw %>%
     cols = starts_with("Q"),
     names_to = "quarter",
     values_to = "value"
-  )
+  ) %>%
+  mutate(quarter = recode(quarter,
+                          "Q1_2023" = "2023-Q1",
+                          "Q2_2023" = "2023-Q2",
+                          "Q3_2023" = "2023-Q3",
+                          "Q4_2023" = "2023-Q4",
+                          "Q1_2024" = "2024-Q1",
+                          "Q2_2024" = "2024-Q2",
+                          "Q3_2024" = "2024-Q3",
+                          "Q4_2024" = "2024-Q4",
+                          "Q1_2025" = "2025-Q1",
+                          "Q2_2025" = "2025-Q2",
+                          "Q3_2025" = "2025-Q3",
+                          "Q4_2025" = "2025-Q4"))
 
 
 # 2. Extract GDP total growth (annualized %)
@@ -70,12 +83,14 @@ bea_gdp_full <- bea_gdp_full %>%
 
 # Reshape to long format for plotting
 gdp_full_long <- bea_gdp_full %>%
-  select(quarter, gdp_actual_index, gdp_noai_index) %>%
+  select(quarter, 
+         gdp_actual_index, 
+         gdp_noai_index) %>%
   pivot_longer(
     cols = c(gdp_actual_index, gdp_noai_index),
     names_to = "series",
     values_to = "index"
-  )
+  ) 
 
 # Plot
 gdp_full_long %>%
@@ -85,7 +100,8 @@ gdp_full_long %>%
        y = "GDP Index (Start = 100)",
        title = "US - Actual GDP vs. GDP without AI Investment"
        ) +
-  scale_color_manual(values = c(gdp_actual_index = "darkgreen", gdp_noai_index = "orange")) +
+  scale_color_manual(values = c(gdp_actual_index = "darkgreen", 
+                                gdp_noai_index = "orange")) +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
     panel.background = element_rect(fill = 'white', color = 'white'),

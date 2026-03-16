@@ -6,7 +6,35 @@ here::i_am("code/2_3_stabilizing_work_pop.R")
 
 
 
+# Import Eurostat true data ----------------------------------------------------------------
+actuals_eurostat <- read_tsv(here("data/eurostat_data/estat_demo_pjan.tsv"),
+                             locale = locale(encoding = "UTF-8",
+                                             decimal_mark = ",",
+                                             grouping_mark = "."))
 
+## extract only FGIS countries
+actuals_eurostat_clean_long <- actuals_eurostat %>%
+  rename(index = 1) %>% # rename column "freq,unit,age,sex,geo\TIME_PERIOD" using its index, 1
+  filter(index %in% c("A,NR,TOTAL,M,EU27_2020", # Europe 27 members (2020, excludes UK)
+                      "A,NR,TOTAL,T,DE_TOT", # germany total ages, total sexes, total country
+                      "A,NR,TOTAL,T,FR", # france, total ages, total sexes
+                      "A,NR,TOTAL,T,ES", # spain, total ages, total sexes
+                      "A,NR,TOTAL,T,IT")) %>% # italy, total ages, total sexes
+  pivot_longer(cols = -index, # means: pivot everything except this column
+               names_to = "year", # pivot year columns to new single column, 'year'
+               values_to = "Value") %>% # 'Values' = estimates
+  mutate(index = recode(index, 
+                        "A,NR,TOTAL,M,EU27_2020" = "EU27-(2020)",
+                        "A,NR,TOTAL,T,DE_TOT" = "Germany", 
+                        "A,NR,TOTAL,T,FR" = "France",
+                        "A,NR,TOTAL,T,ES" = "Spain",
+                        "A,NR,TOTAL,T,IT" = "Italy")) %>%
+  mutate(year = as.integer(year)) %>% # make sure years are read as numbers
+  filter(year >= 1991) %>% # 1991 is the first year where all countries have a value
+  # france had no values before 1991
+  rename(Location = "index") %>%
+  mutate(Projection = "Eurostat2025") %>% # add column to show what projection this is
+  select(Location, year, Projection, Value) # re-order columns
 
 
 
